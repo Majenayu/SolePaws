@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { pgTable, text, real, integer, timestamp, jsonb, uuid } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 
 export const animalTypes = ["dog", "cat", "lovebirds", "chicken", "pigeon"] as const;
 export type AnimalType = typeof animalTypes[number];
@@ -34,6 +36,22 @@ export interface AudioAnalysis {
     duration: number;
   };
 }
+
+export const analysisTable = pgTable("analyses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  animal: text("animal").notNull(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  dominantEmotion: text("dominant_emotion").notNull(),
+  emotionScores: jsonb("emotion_scores").notNull(),
+  audioFeatures: jsonb("audio_features").notNull(),
+});
+
+export type Analysis = typeof analysisTable.$inferSelect;
+export const insertAnalysisSchema = createInsertSchema(analysisTable).omit({ 
+  id: true,
+  timestamp: true 
+});
+export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 
 export const analyzeAudioSchema = z.object({
   animal: z.enum(animalTypes),
