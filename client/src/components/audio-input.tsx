@@ -229,7 +229,7 @@ export function AudioInput({
       
       audioContext.close();
       
-      const analysis = await apiRequest<AudioAnalysis>(
+      const res = await apiRequest(
         'POST',
         '/api/analyze',
         {
@@ -240,6 +240,7 @@ export function AudioInput({
         }
       );
       
+      const analysis: AudioAnalysis = await res.json();
       onAnalysisComplete(analysis);
       
       toast({
