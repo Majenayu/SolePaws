@@ -12,6 +12,7 @@ interface VideoInputProps {
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
   onAnimalDetected?: (animal: AnimalType) => void;
+  sampleFile?: File;
 }
 
 export function VideoInput({
@@ -19,6 +20,7 @@ export function VideoInput({
   onAnalysisComplete,
   onAnalyzing,
   onAnimalDetected,
+  sampleFile,
 }: VideoInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -54,6 +56,12 @@ export function VideoInput({
       if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
     };
   }, []);
+
+  useEffect(() => {
+    if (sampleFile) {
+      analyzeVideo(sampleFile);
+    }
+  }, [sampleFile]);
 
   const startRecording = async () => {
     try {

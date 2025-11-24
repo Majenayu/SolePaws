@@ -12,6 +12,7 @@ interface AudioInputProps {
   onAnalyzing: (analyzing: boolean) => void;
   onAudioData: (data: number[]) => void;
   onAnimalDetected?: (animal: AnimalType) => void;
+  sampleFile?: File;
 }
 
 export function AudioInput({ 
@@ -19,7 +20,8 @@ export function AudioInput({
   onAnalysisComplete, 
   onAnalyzing,
   onAudioData,
-  onAnimalDetected
+  onAnimalDetected,
+  sampleFile
 }: AudioInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,6 +41,13 @@ export function AudioInput({
   useEffect(() => {
     onAudioDataRef.current = onAudioData;
   }, [onAudioData]);
+
+  useEffect(() => {
+    if (sampleFile) {
+      setSelectedFile(sampleFile);
+      analyzeAudio(sampleFile, sampleFile.name);
+    }
+  }, [sampleFile]);
 
   useEffect(() => {
     return () => {

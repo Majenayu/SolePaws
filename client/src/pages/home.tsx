@@ -7,6 +7,7 @@ import { EmotionCircle } from "@/components/emotion-circle";
 import { AudioWaveform } from "@/components/audio-waveform";
 import { ResultsPanel } from "@/components/results-panel";
 import { DatasetGuide } from "@/components/dataset-guide";
+import { DemoSamples } from "@/components/demo-samples";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Video } from "lucide-react";
 
@@ -17,6 +18,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [audioData, setAudioData] = useState<number[] | null>(null);
   const [analysisMode, setAnalysisMode] = useState<"audio" | "video">("audio");
+  const [sampleFile, setSampleFile] = useState<File | null>(null);
 
   const handleAnalysisComplete = (analysis: AudioAnalysis) => {
     setCurrentAnalysis(analysis);
@@ -46,6 +48,16 @@ export default function Home() {
               selectedAnimal={selectedAnimal}
               onSelectAnimal={setSelectedAnimal}
             />
+            <DemoSamples 
+              onAudioSampleLoad={(file) => {
+                setSampleFile(file);
+                setAnalysisMode("audio");
+              }}
+              onVideoSampleLoad={(file) => {
+                setSampleFile(file);
+                setAnalysisMode("video");
+              }}
+            />
             {selectedAnimal && <DatasetGuide selectedAnimal={selectedAnimal} />}
           </div>
 
@@ -69,6 +81,7 @@ export default function Home() {
                   onAnalyzing={setIsAnalyzing}
                   onAudioData={handleAudioData}
                   onAnimalDetected={setSelectedAnimal}
+                  sampleFile={analysisMode === "audio" ? sampleFile || undefined : undefined}
                 />
 
                 <AudioWaveform
@@ -83,6 +96,7 @@ export default function Home() {
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
                   onAnimalDetected={setSelectedAnimal}
+                  sampleFile={analysisMode === "video" ? sampleFile || undefined : undefined}
                 />
               </TabsContent>
             </Tabs>
