@@ -72,17 +72,52 @@ export function generateDemoAudio(animal: AnimalType, emotion: EmotionType): Buf
   const samples = Math.floor(sampleRate * config.duration);
   const audioData = new Float32Array(samples);
 
+  // Create distinct patterns for different emotions
+  const emotionPatterns: Record<EmotionType, { modFreq: number; zcrMultiplier: number; energyMult: number }> = {
+    fear: { modFreq: 120, zcrMultiplier: 2.0, energyMult: 1.5 },
+    stress: { modFreq: 80, zcrMultiplier: 1.8, energyMult: 1.3 },
+    aggression: { modFreq: 40, zcrMultiplier: 1.2, energyMult: 2.0 },
+    comfort: { modFreq: 20, zcrMultiplier: 0.6, energyMult: 0.7 },
+    happiness: { modFreq: 100, zcrMultiplier: 1.5, energyMult: 1.6 },
+    sadness: { modFreq: 30, zcrMultiplier: 0.7, energyMult: 0.6 },
+    anxiety: { modFreq: 110, zcrMultiplier: 1.9, energyMult: 1.4 },
+    contentment: { modFreq: 15, zcrMultiplier: 0.5, energyMult: 0.8 },
+    alertness: { modFreq: 130, zcrMultiplier: 2.2, energyMult: 1.7 },
+  };
+
+  const pattern = emotionPatterns[emotion];
+  const baseFreq = config.frequency;
+
   for (let i = 0; i < samples; i++) {
     const t = i / sampleRate;
-    const baseFreq = config.frequency;
-    const modulationFreq = Math.random() * 50 + 50;
     
-    const wave = Math.sin(2 * Math.PI * baseFreq * t) * 
-                Math.sin(2 * Math.PI * modulationFreq * t * 0.1) *
-                config.amplitude;
+    // Primary oscillator
+    let wave = Math.sin(2 * Math.PI * baseFreq * t);
     
-    const envelope = Math.exp(-t / config.duration);
+    // Amplitude modulation for ZCR variation
+    const ampMod = 0.5 + 0.5 * Math.sin(2 * Math.PI * pattern.modFreq * t);
+    
+    // Frequency modulation for richness
+    const freqMod = 1 + 0.3 * Math.sin(2 * Math.PI * (pattern.modFreq * 0.3) * t);
+    wave *= Math.sin(2 * Math.PI * (baseFreq * freqMod) * t * 0.3);
+    
+    // Apply modulation and amplitude
+    wave *= ampMod * config.amplitude * pattern.energyMult;
+    
+    // Envelope
+    const envelope = Math.exp(-t * 2.5 / config.duration);
     audioData[i] = wave * envelope;
+  }
+
+  // Normalize
+  let maxVal = 0;
+  for (let i = 0; i < samples; i++) {
+    maxVal = Math.max(maxVal, Math.abs(audioData[i]));
+  }
+  if (maxVal > 1) {
+    for (let i = 0; i < samples; i++) {
+      audioData[i] /= maxVal;
+    }
   }
 
   const int16Array = new Int16Array(samples);

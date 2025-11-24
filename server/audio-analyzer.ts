@@ -6,6 +6,9 @@ interface AudioFeatures {
   frequency: number;
   amplitude: number;
   duration: number;
+  rmsEnergy: number;
+  spectralCentroid: number;
+  zcrRate: number;
 }
 
 export class AudioAnalyzer {
@@ -14,14 +17,17 @@ export class AudioAnalyzer {
     
     let sum = 0;
     let maxAmplitude = 0;
+    let sumSquares = 0;
     
     for (let i = 0; i < samples.length; i++) {
       const normalized = samples[i] / 32768;
       sum += Math.abs(normalized);
       maxAmplitude = Math.max(maxAmplitude, Math.abs(normalized));
+      sumSquares += normalized * normalized;
     }
     
     const avgAmplitude = sum / samples.length;
+    const rmsEnergy = Math.sqrt(sumSquares / samples.length);
     
     let zeroCrossings = 0;
     for (let i = 1; i < samples.length; i++) {
@@ -30,139 +36,89 @@ export class AudioAnalyzer {
       }
     }
     
+    const zcrRate = (zeroCrossings / samples.length) * sampleRate;
     const estimatedFrequency = (zeroCrossings / 2) * (sampleRate / samples.length);
     const duration = samples.length / sampleRate;
+    
+    // Estimate spectral centroid using FFT-like approach
+    let spectralSum = 0;
+    let weightedSum = 0;
+    const fftSize = Math.min(1024, samples.length);
+    for (let i = 0; i < fftSize; i++) {
+      const bin = Math.abs(samples[i]) / 32768;
+      const freq = (i / fftSize) * sampleRate;
+      spectralSum += bin;
+      weightedSum += bin * freq;
+    }
+    const spectralCentroid = spectralSum > 0 ? weightedSum / spectralSum : 0;
     
     return {
       pitch: estimatedFrequency * 2,
       frequency: estimatedFrequency,
       amplitude: maxAmplitude,
+      rmsEnergy,
+      spectralCentroid: Math.min(spectralCentroid / 1000, 10),
+      zcrRate: Math.min(zcrRate / 5000, 10),
       duration: Math.min(duration, 30)
     };
   }
 
   private classifyEmotion(animal: AnimalType, features: AudioFeatures): Record<EmotionType, number> {
     const scores: Record<EmotionType, number> = {
-      fear: 0,
-      stress: 0,
-      aggression: 0,
-      comfort: 0,
-      happiness: 0,
-      sadness: 0,
-      anxiety: 0,
-      contentment: 0,
-      alertness: 0,
+      fear: 0.1,
+      stress: 0.1,
+      aggression: 0.1,
+      comfort: 0.1,
+      happiness: 0.1,
+      sadness: 0.1,
+      anxiety: 0.1,
+      contentment: 0.1,
+      alertness: 0.1,
     };
 
-    const { pitch, frequency, amplitude } = features;
+    const { frequency, amplitude, rmsEnergy, spectralCentroid, zcrRate } = features;
 
-    switch (animal) {
-      case 'dog':
-        if (frequency > 800 && amplitude > 0.6) {
-          scores.fear = 0.8;
-          scores.stress = 0.6;
-        } else if (frequency > 600 && amplitude > 0.7) {
-          scores.aggression = 0.85;
-          scores.alertness = 0.7;
-        } else if (frequency < 300 && amplitude < 0.4) {
-          scores.sadness = 0.7;
-          scores.anxiety = 0.5;
-        } else if (frequency > 400 && frequency < 600 && amplitude > 0.5) {
-          scores.happiness = 0.75;
-          scores.alertness = 0.6;
-        } else {
-          scores.contentment = 0.7;
-          scores.comfort = 0.65;
-        }
-        break;
+    // Normalize features to 0-1 range
+    const freqNorm = Math.min(frequency / 2000, 1);
+    const ampNorm = Math.min(amplitude / 1, 1);
+    const energyNorm = Math.min(rmsEnergy * 3, 1);
+    const centroidNorm = Math.min(spectralCentroid / 10, 1);
+    const zcrNorm = Math.min(zcrRate / 10, 1);
 
-      case 'cat':
-        if (frequency > 1000 && amplitude > 0.5) {
-          scores.aggression = 0.8;
-          scores.fear = 0.6;
-        } else if (frequency > 700 && amplitude > 0.4) {
-          scores.stress = 0.75;
-          scores.anxiety = 0.7;
-        } else if (frequency < 400 && amplitude < 0.3) {
-          scores.contentment = 0.85;
-          scores.comfort = 0.8;
-        } else if (frequency > 500 && amplitude > 0.6) {
-          scores.alertness = 0.7;
-          scores.happiness = 0.5;
-        } else {
-          scores.comfort = 0.6;
-          scores.contentment = 0.55;
-        }
-        break;
+    // Universal emotion patterns based on acoustic features
+    
+    // Aggression: high amplitude, high energy, high centroid
+    scores.aggression += (ampNorm * 0.3 + energyNorm * 0.3 + centroidNorm * 0.2) * 0.7;
+    
+    // Fear: high frequency, moderate-high amplitude, high ZCR
+    scores.fear += (freqNorm * 0.3 + ampNorm * 0.2 + zcrNorm * 0.3) * 0.6;
+    
+    // Stress: moderate frequency, moderate amplitude, variable energy
+    scores.stress += (Math.abs(freqNorm - 0.5) < 0.3 ? 0.3 : 0.1) * energyNorm * 0.6;
+    
+    // Happiness: high frequency, moderate-high amplitude, regular rhythm
+    scores.happiness += (freqNorm * 0.35 + ampNorm * 0.25 + (1 - Math.abs(zcrNorm - 0.5)) * 0.15) * 0.7;
+    
+    // Alertness: high frequency, high amplitude, high ZCR
+    scores.alertness += (freqNorm * 0.25 + ampNorm * 0.25 + zcrNorm * 0.3) * 0.7;
+    
+    // Sadness: low frequency, low amplitude, low energy
+    scores.sadness += ((1 - freqNorm) * 0.3 + (1 - ampNorm) * 0.3 + (1 - energyNorm) * 0.2) * 0.6;
+    
+    // Anxiety: high ZCR, moderate frequency, variable amplitude
+    scores.anxiety += (zcrNorm * 0.35 + Math.abs(freqNorm - 0.4) * 0.2 + Math.abs(ampNorm - 0.5) * 0.15) * 0.6;
+    
+    // Contentment: low-moderate frequency, low-moderate amplitude, smooth
+    scores.contentment += ((1 - freqNorm) * 0.25 + (1 - ampNorm) * 0.25 + (1 - zcrNorm) * 0.2) * 0.6;
+    
+    // Comfort: very low frequency, low amplitude, low energy
+    scores.comfort += ((1 - freqNorm) * 0.3 + (1 - ampNorm) * 0.3 + (1 - energyNorm) * 0.15) * 0.6;
 
-      case 'lovebirds':
-        if (frequency > 2000 && amplitude > 0.6) {
-          scores.happiness = 0.85;
-          scores.alertness = 0.7;
-        } else if (frequency > 1500 && amplitude > 0.7) {
-          scores.aggression = 0.75;
-          scores.stress = 0.6;
-        } else if (frequency < 1000 && amplitude < 0.4) {
-          scores.contentment = 0.8;
-          scores.comfort = 0.7;
-        } else if (frequency > 1800) {
-          scores.fear = 0.7;
-          scores.anxiety = 0.65;
-        } else {
-          scores.comfort = 0.65;
-          scores.happiness = 0.6;
-        }
-        break;
-
-      case 'chicken':
-        if (frequency > 600 && amplitude > 0.7) {
-          scores.fear = 0.85;
-          scores.stress = 0.75;
-        } else if (frequency > 450 && amplitude > 0.5) {
-          scores.aggression = 0.7;
-          scores.alertness = 0.8;
-        } else if (frequency < 300) {
-          scores.contentment = 0.8;
-          scores.comfort = 0.75;
-        } else if (amplitude > 0.6) {
-          scores.alertness = 0.75;
-          scores.happiness = 0.5;
-        } else {
-          scores.comfort = 0.7;
-          scores.contentment = 0.6;
-        }
-        break;
-
-      case 'pigeon':
-        if (frequency > 500 && amplitude > 0.6) {
-          scores.aggression = 0.75;
-          scores.alertness = 0.8;
-        } else if (frequency > 350 && amplitude > 0.5) {
-          scores.fear = 0.7;
-          scores.anxiety = 0.65;
-        } else if (frequency < 250 && amplitude < 0.4) {
-          scores.contentment = 0.85;
-          scores.comfort = 0.8;
-        } else if (amplitude > 0.5) {
-          scores.happiness = 0.7;
-          scores.alertness = 0.6;
-        } else {
-          scores.comfort = 0.75;
-          scores.contentment = 0.7;
-        }
-        break;
-    }
-
-    const variance = Math.random() * 0.15 - 0.075;
-    Object.keys(scores).forEach((key) => {
-      const emotion = key as EmotionType;
-      scores[emotion] = Math.max(0.1, Math.min(1, scores[emotion] + variance));
-    });
-
+    // Normalize to probabilities
     const total = Object.values(scores).reduce((sum, score) => sum + score, 0);
     Object.keys(scores).forEach((key) => {
       const emotion = key as EmotionType;
-      scores[emotion] = scores[emotion] / total;
+      scores[emotion] = scores[emotion] / (total || 0.9);
     });
 
     return scores;
