@@ -72,6 +72,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Video analysis endpoint
+  app.post('/api/analyze-video', async (req, res) => {
+    try {
+      const animal = req.body.animal || req.body.detectedAnimal || 'dog';
+      const poseData = req.body.poseData ? JSON.parse(req.body.poseData) : {};
+
+      // For now, create a mock analysis with video context
+      // In production, would process the actual video file
+      const videoAnalysis = await audioAnalyzer.analyze(
+        animal as any,
+        Buffer.from([0]),
+        44100
+      );
+
+      // Enhance with pose data if available
+      if (poseData && Object.keys(poseData).length > 0) {
+        // Modify emotion scores based on pose features
+        const posureConfidence = poseData.score || 0.5;
+        Object.keys(videoAnalysis.emotionScores).forEach(emotion => {
+          videoAnalysis.emotionScores[emotion as any] *= (0.5 + posureConfidence * 0.5);
+        });
+      }
+
+      await storage.saveAnalysis(videoAnalysis);
+      res.json(videoAnalysis);
+    } catch (error) {
+      console.error('Video analysis error:', error);
+      res.status(500).json({ error: 'Failed to analyze video' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

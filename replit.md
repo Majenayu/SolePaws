@@ -1,8 +1,12 @@
-# Animal Emotion Detection System
+# SoulPaws - Pet Emotion Detection System
 
 ## Overview
 
-This is a real-time animal emotion detection application that analyzes audio vocalizations from various animals (dogs, cats, lovebirds, chickens, and pigeons) to identify their emotional states. The system processes audio input through either live recording or file upload, extracts audio features (pitch, frequency, amplitude, duration), and classifies emotions such as fear, stress, aggression, comfort, happiness, sadness, anxiety, contentment, and alertness. The application provides visual feedback through waveform displays, circular emotion visualizations, and confidence metrics with historical analysis tracking.
+**SoulPaws** is a comprehensive pet emotion detection platform that analyzes both audio vocalizations and visual body language from various animals (dogs, cats, lovebirds, chickens, and pigeons) to identify their emotional states. The system supports dual-mode analysis:
+- **Audio Analysis**: Real-time vocalization processing with advanced acoustic feature extraction
+- **Video Analysis**: Live camera feed and video file upload with skeleton/pose detection
+
+The system processes input through live recording, file upload, or both combined, extracts rich features (audio: pitch, frequency, spectral analysis; visual: posture, skeleton keypoints, movement dynamics), and classifies emotions such as fear, stress, aggression, comfort, happiness, sadness, anxiety, contentment, and alertness. The application provides visual feedback through waveform displays, circular emotion visualizations, skeleton overlays, and confidence metrics with historical analysis tracking.
 
 ## User Preferences
 
@@ -81,3 +85,13 @@ Preferred communication style: Simple, everyday language.
 - `@assets/*` → attached_assets/*
 
 **Audio Processing:** Native Web Audio API on client-side for microphone access and recording (MediaRecorder), canvas-based waveform visualization.
+
+**Video Processing:** MediaRecorder API for video capture, Canvas 2D for skeleton visualization, custom PoseDetector class for keypoint analysis (foundation for TensorFlow.js/MediaPipe integration).
+
+## Recent Changes
+
+- **Rebranded** to **SoulPaws** with paw print logo
+- **Added Video Analysis Tab** supporting live camera and video file upload
+- **Implemented Pose Detection Framework** for skeleton tracking and animal posture analysis
+- **Enhanced Emotion Classification** to support both audio and visual features
+- **Multi-modal Analysis** combining vocal and behavioral indicators for more accurate emotion detection

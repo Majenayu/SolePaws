@@ -2,11 +2,13 @@ import { useState } from "react";
 import { AnimalType, AudioAnalysis } from "@shared/schema";
 import { PetSelector } from "@/components/pet-selector";
 import { AudioInput } from "@/components/audio-input";
+import { VideoInput } from "@/components/video-input";
 import { EmotionCircle } from "@/components/emotion-circle";
 import { AudioWaveform } from "@/components/audio-waveform";
 import { ResultsPanel } from "@/components/results-panel";
 import { DatasetGuide } from "@/components/dataset-guide";
-import { Activity } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Mic, Video } from "lucide-react";
 
 export default function Home() {
   const [selectedAnimal, setSelectedAnimal] = useState<AnimalType | null>(null);
@@ -14,6 +16,7 @@ export default function Home() {
   const [analysisHistory, setAnalysisHistory] = useState<AudioAnalysis[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [audioData, setAudioData] = useState<number[] | null>(null);
+  const [analysisMode, setAnalysisMode] = useState<"audio" | "video">("audio");
 
   const handleAnalysisComplete = (analysis: AudioAnalysis) => {
     setCurrentAnalysis(analysis);
@@ -29,9 +32,9 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <header className="h-16 border-b border-border bg-card flex items-center justify-center px-6">
         <div className="flex items-center gap-3">
-          <Activity className="w-6 h-6 text-primary" data-testid="icon-logo" />
+          <div className="w-6 h-6 text-primary font-bold text-lg" data-testid="icon-logo">🐾</div>
           <h1 className="text-2xl font-semibold text-foreground" data-testid="text-title">
-            Animal Emotion Detection System
+            SoulPaws - Pet Emotion Detection
           </h1>
         </div>
       </header>
@@ -47,22 +50,46 @@ export default function Home() {
           </div>
 
           <div className="lg:col-span-6 space-y-4 lg:space-y-6">
-            <AudioInput
-              selectedAnimal={selectedAnimal}
-              onAnalysisComplete={handleAnalysisComplete}
-              onAnalyzing={setIsAnalyzing}
-              onAudioData={handleAudioData}
-              onAnimalDetected={setSelectedAnimal}
-            />
+            <Tabs value={analysisMode} onValueChange={(v) => setAnalysisMode(v as "audio" | "video")} data-testid="tabs-analysis-mode">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="audio" data-testid="tab-audio">
+                  <Mic className="w-4 h-4 mr-2" />
+                  Audio Analysis
+                </TabsTrigger>
+                <TabsTrigger value="video" data-testid="tab-video">
+                  <Video className="w-4 h-4 mr-2" />
+                  Video Analysis
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="audio" className="space-y-4">
+                <AudioInput
+                  selectedAnimal={selectedAnimal}
+                  onAnalysisComplete={handleAnalysisComplete}
+                  onAnalyzing={setIsAnalyzing}
+                  onAudioData={handleAudioData}
+                  onAnimalDetected={setSelectedAnimal}
+                />
+
+                <AudioWaveform
+                  audioData={audioData}
+                  isActive={isAnalyzing}
+                />
+              </TabsContent>
+
+              <TabsContent value="video" className="space-y-4">
+                <VideoInput
+                  selectedAnimal={selectedAnimal}
+                  onAnalysisComplete={handleAnalysisComplete}
+                  onAnalyzing={setIsAnalyzing}
+                  onAnimalDetected={setSelectedAnimal}
+                />
+              </TabsContent>
+            </Tabs>
 
             <EmotionCircle
               analysis={currentAnalysis}
               isAnalyzing={isAnalyzing}
-            />
-
-            <AudioWaveform
-              audioData={audioData}
-              isActive={isAnalyzing}
             />
           </div>
 
