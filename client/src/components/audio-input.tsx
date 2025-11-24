@@ -11,13 +11,15 @@ interface AudioInputProps {
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
   onAudioData: (data: number[]) => void;
+  onAnimalDetected?: (animal: AnimalType) => void;
 }
 
 export function AudioInput({ 
   selectedAnimal, 
   onAnalysisComplete, 
   onAnalyzing,
-  onAudioData 
+  onAudioData,
+  onAnimalDetected
 }: AudioInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -47,15 +49,6 @@ export function AudioInput({
   }, []);
 
   const startRecording = async () => {
-    if (!selectedAnimal) {
-      toast({
-        title: "Select an animal first",
-        description: "Please choose an animal type before recording.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
@@ -130,16 +123,6 @@ export function AudioInput({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!selectedAnimal) {
-      toast({
-        title: "Select an animal first",
-        description: "Please choose an animal type before uploading.",
-        variant: "destructive",
-      });
-      event.target.value = '';
-      return;
-    }
-
     if (!file.type.startsWith('audio/')) {
       toast({
         title: "Invalid file type",
@@ -156,8 +139,6 @@ export function AudioInput({
   };
 
   const analyzeAudio = async (audioBlob: Blob, fileName?: string) => {
-    if (!selectedAnimal) return;
-
     setIsProcessing(true);
     onAnalyzing(true);
 
@@ -233,7 +214,7 @@ export function AudioInput({
         'POST',
         '/api/analyze',
         {
-          animal: selectedAnimal,
+          animal: selectedAnimal || undefined,
           audioData: base64Audio,
           sampleRate,
           fileName: fileName || 'recording.wav'
@@ -241,6 +222,12 @@ export function AudioInput({
       );
       
       const analysis: AudioAnalysis = await res.json();
+      
+      // Auto-select animal if it was detected
+      if (!selectedAnimal && onAnimalDetected) {
+        onAnimalDetected(analysis.animal);
+      }
+      
       onAnalysisComplete(analysis);
       
       toast({

@@ -54,7 +54,7 @@ export const insertAnalysisSchema = createInsertSchema(analysisTable).omit({
 export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 
 export const analyzeAudioSchema = z.object({
-  animal: z.enum(animalTypes),
+  animal: z.enum(animalTypes).optional(),
   audioData: z.string(),
   sampleRate: z.number(),
   fileName: z.string().optional(),

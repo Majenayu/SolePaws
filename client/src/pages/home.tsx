@@ -52,6 +52,7 @@ export default function Home() {
               onAnalysisComplete={handleAnalysisComplete}
               onAnalyzing={setIsAnalyzing}
               onAudioData={handleAudioData}
+              onAnimalDetected={setSelectedAnimal}
             />
 
             <EmotionCircle

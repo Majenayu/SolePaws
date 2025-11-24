@@ -63,6 +63,82 @@ export class AudioAnalyzer {
     };
   }
 
+  private classifyAnimal(features: AudioFeatures): AnimalType {
+    const { frequency, amplitude, rmsEnergy, spectralCentroid, zcrRate } = features;
+    
+    // Animal frequency ranges (Hz) and characteristics
+    // Pigeon: 200-800 Hz (low coos)
+    // Dog: 400-2000 Hz (barks)
+    // Cat: 300-1500 Hz (meows)
+    // Chicken: 1000-3000 Hz (clucks)
+    // Lovebirds: 2000-6000 Hz (chirps)
+    
+    const scores = {
+      pigeon: 0,
+      dog: 0,
+      cat: 0,
+      chicken: 0,
+      lovebirds: 0
+    };
+    
+    // Primary classifier: frequency
+    if (frequency < 600) {
+      scores.pigeon += 0.4;  // Pigeon coos are low frequency
+    } else if (frequency < 1000) {
+      scores.dog += 0.3;
+      scores.cat += 0.2;
+    } else if (frequency < 1800) {
+      scores.dog += 0.3;
+      scores.chicken += 0.2;
+    } else if (frequency < 3000) {
+      scores.chicken += 0.35;
+      scores.lovebirds += 0.15;
+    } else {
+      scores.lovebirds += 0.4;  // High frequency = birds
+    }
+    
+    // Secondary: ZCR (zero crossing rate) - higher ZCR = more oscillation
+    // Birds have higher ZCR, mammals lower
+    if (zcrRate > 6) {
+      scores.lovebirds += 0.2;
+      scores.chicken += 0.15;
+    } else if (zcrRate < 3) {
+      scores.pigeon += 0.2;
+      scores.dog += 0.15;
+    }
+    
+    // Tertiary: Amplitude dynamics
+    // Dogs bark with sharp attacks (high amplitude)
+    if (amplitude > 0.7) {
+      scores.dog += 0.1;
+      scores.chicken += 0.05;
+    }
+    
+    // Cats have smooth contours
+    if (amplitude < 0.5 && rmsEnergy < 0.3) {
+      scores.cat += 0.15;
+    }
+    
+    // Pigeons and lovebirds have sustained notes
+    if (rmsEnergy > 0.4) {
+      scores.pigeon += 0.1;
+      scores.lovebirds += 0.1;
+    }
+    
+    // Find animal with highest score
+    let detectedAnimal: AnimalType = 'dog';
+    let maxScore = 0;
+    
+    Object.entries(scores).forEach(([animal, score]) => {
+      if (score > maxScore) {
+        maxScore = score;
+        detectedAnimal = animal as AnimalType;
+      }
+    });
+    
+    return detectedAnimal;
+  }
+
   private classifyEmotion(animal: AnimalType, features: AudioFeatures): Record<EmotionType, number> {
     const scores: Record<EmotionType, number> = {
       fear: 0.1,
@@ -124,9 +200,13 @@ export class AudioAnalyzer {
     return scores;
   }
 
-  async analyze(animal: AnimalType, audioBuffer: Buffer, sampleRate: number): Promise<AudioAnalysis> {
+  async analyze(animal: AnimalType | null, audioBuffer: Buffer, sampleRate: number): Promise<AudioAnalysis> {
     const features = this.extractAudioFeatures(audioBuffer, sampleRate);
-    const emotionScores = this.classifyEmotion(animal, features);
+    
+    // Auto-detect animal if not provided
+    const detectedAnimal = animal || this.classifyAnimal(features);
+    
+    const emotionScores = this.classifyEmotion(detectedAnimal, features);
     
     let dominantEmotion: EmotionType = 'contentment';
     let maxScore = 0;
@@ -140,7 +220,7 @@ export class AudioAnalyzer {
 
     return {
       id: randomUUID(),
-      animal,
+      animal: detectedAnimal,
       timestamp: new Date().toISOString(),
       dominantEmotion,
       emotionScores,
