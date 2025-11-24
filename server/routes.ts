@@ -2,8 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { audioAnalyzer } from "./audio-analyzer";
-import { analyzeAudioSchema } from "@shared/schema";
+import { analyzeAudioSchema, animalTypes, emotionTypes } from "@shared/schema";
 import { z } from "zod";
+import { generateDemoAudio, getAllDemoSamples } from "./demo-audio";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/analyze', async (req, res) => {
@@ -69,6 +70,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to fetch analysis:', error);
       res.status(500).json({ error: 'Failed to fetch analysis' });
+    }
+  });
+
+  app.get('/api/demo-samples', async (_req, res) => {
+    try {
+      const samples = getAllDemoSamples();
+      res.json(samples);
+    } catch (error) {
+      console.error('Failed to fetch demo samples:', error);
+      res.status(500).json({ error: 'Failed to fetch demo samples' });
+    }
+  });
+
+  app.post('/api/demo-analyze', async (req, res) => {
+    try {
+      const { animal, emotion } = req.body;
+      
+      if (!animalTypes.includes(animal) || !emotionTypes.includes(emotion)) {
+        return res.status(400).json({ error: 'Invalid animal or emotion' });
+      }
+
+      const audioBuffer = generateDemoAudio(animal, emotion);
+      const sampleRate = 44100;
+      
+      const analysis = await audioAnalyzer.analyze(animal, audioBuffer, sampleRate);
+      await storage.saveAnalysis(analysis);
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error('Demo analysis error:', error);
+      res.status(500).json({ error: 'Failed to analyze demo audio' });
     }
   });
 
