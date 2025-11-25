@@ -55,10 +55,8 @@ export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 
 export const analyzeAudioSchema = z.object({
   animal: z.enum(animalTypes).optional(),
-  audioData: z.string(),
   sampleRate: z.number(),
   fileName: z.string().optional(),
-  audioHash: z.string().optional(),
 });
 
 export type AnalyzeAudioRequest = z.infer<typeof analyzeAudioSchema>;
@@ -77,6 +75,5 @@ export interface TrainingAudioSample {
 export const trainingSampleSchema = z.object({
   animal: z.enum(animalTypes),
   emotion: z.enum(emotionTypes),
-  audioData: z.string(),
   fileName: z.string(),
 });
