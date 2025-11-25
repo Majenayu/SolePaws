@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { animalTypes, emotionTypes } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, Trash2 } from "lucide-react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 
 interface TrainingSample {
   id: string;
@@ -26,7 +26,7 @@ export default function Admin() {
   const [trainingSamples, setTrainingSamples] = useState<TrainingSample[]>([]);
   const [isLoadingSamples, setIsLoadingSamples] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

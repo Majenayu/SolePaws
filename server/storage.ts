@@ -45,7 +45,9 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(analysisTable)
-      .where((t: any) => t.id === id)
+      .where((t: any) => ({
+        get id() { return id; }
+      }) as any)
       .limit(1);
     
     if (!result.length) return undefined;
@@ -67,16 +69,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTrainingSamples(): Promise<TrainingAudioSample[]> {
-    return Array.from(this.trainingSamples.values());
+    const samples: TrainingAudioSample[] = [];
+    this.trainingSamples.forEach((sample) => {
+      samples.push(sample);
+    });
+    return samples;
   }
 
   async findMatchingTrainingSample(audioHash: string, threshold: number = 0.95): Promise<TrainingAudioSample | undefined> {
-    for (const sample of this.trainingSamples.values()) {
-      if (this.compareHashes(audioHash, sample.audioHash) > threshold) {
-        return sample;
+    let result: TrainingAudioSample | undefined;
+    this.trainingSamples.forEach((sample) => {
+      if (this.compareHashes(audioHash, sample.audioHash) > threshold && !result) {
+        result = sample;
       }
-    }
-    return undefined;
+    });
+    return result;
   }
 
   private compareHashes(hash1: string, hash2: string): number {
