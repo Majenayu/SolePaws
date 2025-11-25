@@ -200,22 +200,39 @@ export function VideoInput({
 
             const poses = await poseDetectorRef.current!.estimatePoses(videoRef.current);
             
-            if (poses && poses.length > 0 && canvasRef.current) {
+            if (poses && poses.length > 0 && canvasRef.current && videoRef.current) {
               const pose = poses[0];
               setPoseData(pose);
 
-              // Draw video frame and skeleton
-              const ctx = canvasRef.current.getContext("2d");
-              if (ctx && videoRef.current) {
-                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-                drawSkeleton(ctx, pose);
+              // Get canvas and video dimensions
+              const canvas = canvasRef.current;
+              const video = videoRef.current;
+              
+              // Set canvas size to match display size
+              const rect = canvas.getBoundingClientRect();
+              canvas.width = rect.width;
+              canvas.height = rect.height;
+
+              const ctx = canvas.getContext("2d", { willReadFrequently: true });
+              if (ctx) {
+                // Clear and draw skeleton overlay
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Calculate scaling factors
+                const scaleX = canvas.width / (video.videoWidth || 640);
+                const scaleY = canvas.height / (video.videoHeight || 480);
+
+                // Draw skeleton with scaled coordinates
+                drawSkeletonScaled(ctx, pose, scaleX, scaleY);
                 
                 // Draw animal name if detected
                 if (detectedAnimal) {
                   ctx.fillStyle = "#00ff00";
-                  ctx.font = "bold 16px Arial";
-                  ctx.fillText(detectedAnimal.toUpperCase(), 10, 30);
+                  ctx.font = "bold 24px Arial";
+                  ctx.lineWidth = 2;
+                  ctx.strokeStyle = "#000000";
+                  ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
+                  ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
                 }
               }
 
@@ -314,6 +331,58 @@ export function VideoInput({
     });
   };
 
+  const drawSkeletonScaled = (ctx: CanvasRenderingContext2D, pose: any, scaleX: number, scaleY: number) => {
+    const keypoints = pose.keypoints || [];
+
+    // Draw keypoints as circles
+    keypoints.forEach((point: any) => {
+      if (point.score > 0.3) {
+        const x = point.x * scaleX;
+        const y = point.y * scaleY;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = "#00ff00";
+        ctx.fill();
+        
+        // Add outline for visibility
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    });
+
+    // Draw skeleton connections with thicker lines
+    const adjacentKeyPoints = [
+      [0, 1], [0, 2], [1, 3], [2, 4], [0, 5], [0, 6], [5, 7], [7, 9],
+      [6, 8], [8, 10], [5, 6], [5, 11], [6, 12], [11, 12], [11, 13], [13, 15],
+      [12, 14], [14, 16],
+    ];
+
+    adjacentKeyPoints.forEach(([start, end]) => {
+      if (keypoints[start] && keypoints[end]) {
+        const startPoint = keypoints[start];
+        const endPoint = keypoints[end];
+
+        if (startPoint.score > 0.3 && endPoint.score > 0.3) {
+          const startX = startPoint.x * scaleX;
+          const startY = startPoint.y * scaleY;
+          const endX = endPoint.x * scaleX;
+          const endY = endPoint.y * scaleY;
+
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.strokeStyle = "#00ff00";
+          ctx.lineWidth = 3;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.stroke();
+        }
+      }
+    });
+  };
+
   return (
     <Card className="p-6" data-testid="card-video-input">
       <div className="space-y-4">
@@ -341,14 +410,13 @@ export function VideoInput({
             />
             <canvas
               ref={canvasRef}
-              className="absolute inset-0"
-              width={640}
-              height={480}
+              className="absolute inset-0 w-full h-full"
+              style={{ imageRendering: "pixelated" }}
               data-testid="canvas-skeleton"
             />
           </div>
           <div className="text-xs text-muted-foreground px-1">
-            Video will automatically detect skeleton pose and emotions while playing
+            Green skeleton overlay shows real-time pose detection while video plays
           </div>
         </div>
 
