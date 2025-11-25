@@ -75,64 +75,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = analyzeAudioSchema.parse(req.body);
       
-      const base64Data = validatedData.audioData.split(',')[1] || validatedData.audioData;
-      const audioBuffer = Buffer.from(base64Data, 'base64');
-      
-      if (audioBuffer.length < 100) {
-        return res.status(400).json({ 
-          error: 'Audio data too short. Please provide a longer audio sample.' 
-        });
-      }
-      
-      if (audioBuffer.length > 10 * 1024 * 1024) {
-        return res.status(400).json({ 
-          error: 'Audio data too large. Maximum size is 10MB.' 
-        });
-      }
-      
       // HARDCODED mode: Only recognize pre-trained samples via exact filename match
-      if (validatedData.fileName) {
-        const trainingSample = await storage.findMatchingTrainingSample(validatedData.fileName);
-        if (trainingSample) {
-          console.log(`Found exact training sample match: ${trainingSample.fileName} (${trainingSample.animal} - ${trainingSample.emotion})`);
-          const emotionScores: Record<string, number> = {
-            fear: 0.05,
-            stress: 0.05,
-            aggression: 0.05,
-            comfort: 0.05,
-            happiness: 0.05,
-            sadness: 0.05,
-            anxiety: 0.05,
-            contentment: 0.05,
-            alertness: 0.05,
-          };
-          emotionScores[trainingSample.emotion] = 0.55;
-          
-          const analysis: AudioAnalysis = {
-            id: randomUUID(),
-            animal: trainingSample.animal,
-            timestamp: new Date().toISOString(),
-            dominantEmotion: trainingSample.emotion as any,
-            emotionScores: emotionScores as any,
-            audioFeatures: { pitch: 0, frequency: 0, amplitude: 0, duration: 0 },
-          };
-          
-          await storage.saveAnalysis(analysis);
-          return res.json(analysis);
-        } else {
-          // Audio not found in training data - reject it
-          return res.status(404).json({ 
-            error: 'Audio not recognized. This sample has not been added to the training model. Please train a sample first in the Admin Panel.',
-            code: 'NOT_IN_TRAINING_DATA'
-          });
-        }
+      const fileName = validatedData.fileName;
+      if (!fileName) {
+        return res.status(400).json({ 
+          error: 'This system only recognizes pre-trained audio samples. Please ensure your audio has been uploaded in Admin Panel first.',
+          code: 'NO_FILENAME_PROVIDED'
+        });
       }
       
-      // No filename provided - reject
-      return res.status(400).json({ 
-        error: 'This system only recognizes pre-trained audio samples. Please ensure your audio has been uploaded in Admin Panel first.',
-        code: 'NO_FILENAME_PROVIDED'
-      });
+      const trainingSample = await storage.findMatchingTrainingSample(fileName);
+      if (!trainingSample) {
+        return res.status(404).json({ 
+          error: 'Audio not recognized. This sample has not been added to the training model. Please train a sample first in the Admin Panel.',
+          code: 'NOT_IN_TRAINING_DATA'
+        });
+      }
+      
+      console.log(`Found exact training sample match: ${trainingSample.fileName} (${trainingSample.animal} - ${trainingSample.emotion})`);
+      const emotionScores: Record<string, number> = {
+        fear: 0.05,
+        stress: 0.05,
+        aggression: 0.05,
+        comfort: 0.05,
+        happiness: 0.05,
+        sadness: 0.05,
+        anxiety: 0.05,
+        contentment: 0.05,
+        alertness: 0.05,
+      };
+      emotionScores[trainingSample.emotion] = 0.55;
+      
+      const analysis: AudioAnalysis = {
+        id: randomUUID(),
+        animal: trainingSample.animal,
+        timestamp: new Date().toISOString(),
+        dominantEmotion: trainingSample.emotion as any,
+        emotionScores: emotionScores as any,
+        audioFeatures: { pitch: 0, frequency: 0, amplitude: 0, duration: 0 },
+      };
+      
+      await storage.saveAnalysis(analysis);
+      res.json(analysis);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
