@@ -9,14 +9,12 @@ import { apiRequest } from "@/lib/queryClient";
 interface AudioInputProps {
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
-  onAudioData: (data: number[]) => void;
   sampleFile?: File;
 }
 
 export function AudioInput({ 
   onAnalysisComplete, 
   onAnalyzing,
-  onAudioData,
   sampleFile
 }: AudioInputProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -30,13 +28,8 @@ export function AudioInput({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const onAudioDataRef = useRef(onAudioData);
   
   const { toast } = useToast();
-  
-  useEffect(() => {
-    onAudioDataRef.current = onAudioData;
-  }, [onAudioData]);
 
   useEffect(() => {
     if (sampleFile) {
@@ -65,14 +58,6 @@ export function AudioInput({
       
       const updateWaveform = () => {
         if (!analyserRef.current) return;
-        
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteTimeDomainData(dataArray);
-        
-        const normalizedData = Array.from(dataArray).map(v => (v - 128) / 128);
-        onAudioDataRef.current(normalizedData);
-        
         animationFrameRef.current = requestAnimationFrame(updateWaveform);
       };
       

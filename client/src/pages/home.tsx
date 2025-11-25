@@ -3,7 +3,6 @@ import { AudioAnalysis } from "@shared/schema";
 import { AudioInput } from "@/components/audio-input";
 import { VideoInput } from "@/components/video-input";
 import { EmotionCircle } from "@/components/emotion-circle";
-import { AudioWaveform } from "@/components/audio-waveform";
 import { ResultsPanel } from "@/components/results-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Video } from "lucide-react";
@@ -12,17 +11,12 @@ export default function Home() {
   const [currentAnalysis, setCurrentAnalysis] = useState<AudioAnalysis | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AudioAnalysis[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [audioData, setAudioData] = useState<number[] | null>(null);
   const [analysisMode, setAnalysisMode] = useState<"audio" | "video">("audio");
 
   const handleAnalysisComplete = (analysis: AudioAnalysis) => {
     setCurrentAnalysis(analysis);
     setAnalysisHistory(prev => [analysis, ...prev].slice(0, 7));
     setIsAnalyzing(false);
-  };
-
-  const handleAudioData = (data: number[]) => {
-    setAudioData(data);
   };
 
   return (
@@ -92,12 +86,6 @@ export default function Home() {
                 <AudioInput
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
-                  onAudioData={handleAudioData}
-                />
-
-                <AudioWaveform
-                  audioData={audioData}
-                  isActive={isAnalyzing}
                 />
               </TabsContent>
 
