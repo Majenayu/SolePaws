@@ -62,3 +62,20 @@ export const analyzeAudioSchema = z.object({
 
 export type AnalyzeAudioRequest = z.infer<typeof analyzeAudioSchema>;
 export type AnalyzeAudioResponse = AudioAnalysis;
+
+// Admin training data
+export interface TrainingAudioSample {
+  id: string;
+  animal: AnimalType;
+  emotion: EmotionType;
+  audioHash: string;
+  fileName: string;
+  createdAt: string;
+}
+
+export const trainingSampleSchema = z.object({
+  animal: z.enum(animalTypes),
+  emotion: z.enum(emotionTypes),
+  audioData: z.string(),
+  fileName: z.string(),
+});

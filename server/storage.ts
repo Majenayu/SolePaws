@@ -1,4 +1,4 @@
-import { type AudioAnalysis, analysisTable } from "@shared/schema";
+import { type AudioAnalysis, analysisTable, type TrainingAudioSample, type AnimalType, type EmotionType } from "@shared/schema";
 import { db } from "./db";
 import { desc } from "drizzle-orm";
 
@@ -6,9 +6,14 @@ export interface IStorage {
   saveAnalysis(analysis: AudioAnalysis): Promise<AudioAnalysis>;
   getAnalyses(): Promise<AudioAnalysis[]>;
   getAnalysisById(id: string): Promise<AudioAnalysis | undefined>;
+  saveTrainingSample(sample: TrainingAudioSample): Promise<TrainingAudioSample>;
+  getTrainingSamples(): Promise<TrainingAudioSample[]>;
+  findMatchingTrainingSample(audioHash: string, threshold: number): Promise<TrainingAudioSample | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
+  private trainingSamples: Map<string, TrainingAudioSample> = new Map();
+
   async saveAnalysis(analysis: AudioAnalysis): Promise<AudioAnalysis> {
     await db.insert(analysisTable).values({
       id: analysis.id,
@@ -54,6 +59,35 @@ export class DatabaseStorage implements IStorage {
       emotionScores: row.emotionScores as any,
       audioFeatures: row.audioFeatures as any,
     };
+  }
+
+  async saveTrainingSample(sample: TrainingAudioSample): Promise<TrainingAudioSample> {
+    this.trainingSamples.set(sample.audioHash, sample);
+    return sample;
+  }
+
+  async getTrainingSamples(): Promise<TrainingAudioSample[]> {
+    return Array.from(this.trainingSamples.values());
+  }
+
+  async findMatchingTrainingSample(audioHash: string, threshold: number = 0.95): Promise<TrainingAudioSample | undefined> {
+    for (const sample of this.trainingSamples.values()) {
+      if (this.compareHashes(audioHash, sample.audioHash) > threshold) {
+        return sample;
+      }
+    }
+    return undefined;
+  }
+
+  private compareHashes(hash1: string, hash2: string): number {
+    if (hash1 === hash2) return 1.0;
+    const str1 = hash1.split('').sort().join('');
+    const str2 = hash2.split('').sort().join('');
+    let matches = 0;
+    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+      if (str1[i] === str2[i]) matches++;
+    }
+    return matches / Math.max(str1.length, str2.length);
   }
 }
 
