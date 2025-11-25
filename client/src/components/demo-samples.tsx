@@ -92,6 +92,26 @@ const DEMO_SAMPLES: SampleFile[] = [
     path: "/demo-videos/cat_toy.mp4",
     filesize: "15 MB",
   },
+  {
+    id: "happy-dog-uploaded",
+    name: "Happy Dog (User Video)",
+    type: "video",
+    animal: "dog",
+    emotion: "Happiness/Joy",
+    description: "Real dog showing happy behavior - tail wagging, playful jumping",
+    path: "/attached_assets/5496003-uhd_3840_2160_24fps_1764043032706.mp4",
+    filesize: "55 MB",
+  },
+  {
+    id: "angry-dog-uploaded",
+    name: "Angry/Aggressive Dog (User Video)",
+    type: "video",
+    animal: "dog",
+    emotion: "Aggression/Stress",
+    description: "Real dog showing aggressive behavior - growling, barking stance",
+    path: "/attached_assets/10940346-hd_1080_1920_30fps_1764043229243.mp4",
+    filesize: "30 MB",
+  },
 ];
 
 export function DemoSamples({ onAudioSampleLoad, onVideoSampleLoad }: DemoSamplesProps) {
