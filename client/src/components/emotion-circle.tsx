@@ -41,8 +41,8 @@ export function EmotionCircle({ analysis, isAnalyzing, size = "full" }: EmotionC
   const barScale = isCompact ? 40 : 50;
   const circleRadiusDominant = isCompact ? "20" : "28";
   const circleRadius = isCompact ? "16" : "22";
-  const fontSize = isCompact ? "10px" : undefined;
-  const fontSizeDominant = isCompact ? "10px" : "11px";
+  const fontSize = isCompact ? "13px" : undefined;
+  const fontSizeDominant = isCompact ? "13px" : "11px";
 
   const getEmotionAngle = (index: number) => {
     const angleStep = 360 / emotionTypes.length;
@@ -155,10 +155,10 @@ export function EmotionCircle({ analysis, isAnalyzing, size = "full" }: EmotionC
             <div className="text-center">
               {isAnalyzing ? (
                 <div className="animate-pulse">
-                  <div className="text-xs text-muted-foreground mb-1">Analyzing...</div>
+                  <div className="text-sm text-muted-foreground mb-1">Analyzing...</div>
                 </div>
               ) : analysis ? (
-                <div className="text-xs text-muted-foreground">{Math.round(analysis.emotionScores[analysis.dominantEmotion] * 100)}%</div>
+                <div className="text-lg font-semibold text-muted-foreground">{Math.round(analysis.emotionScores[analysis.dominantEmotion] * 100)}%</div>
               ) : null}
             </div>
           </div>
