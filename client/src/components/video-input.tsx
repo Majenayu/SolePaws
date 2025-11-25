@@ -228,6 +228,9 @@ export function VideoInput({
       }
 
       // Start real-time detection while video plays (only if detectors are ready)
+      let playStartTime: number | null = null;
+      const playbackDelayMs = 3000; // 3 seconds
+      
       if (videoRef.current && canvasRef.current && detectorsReady) {
         const detectLoop = async () => {
           try {
@@ -236,6 +239,11 @@ export function VideoInput({
                 cancelAnimationFrame(animationFrameRef.current);
               }
               return;
+            }
+
+            // Track play start time
+            if (playStartTime === null && videoRef.current.currentTime > 0) {
+              playStartTime = Date.now();
             }
 
             // Detect animal
@@ -298,7 +306,8 @@ export function VideoInput({
         detectLoop();
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for 3 seconds of playback before showing results
+      await new Promise(resolve => setTimeout(resolve, playbackDelayMs));
 
       // Use hardcoded filename-based matching (same as audio)
       const { apiRequest } = await import("@/lib/queryClient");
@@ -385,32 +394,37 @@ export function VideoInput({
       }
     });
 
-    // Draw keypoints as larger circles with better visibility
+    // Draw MoveNet-style keypoint boxes
     keypoints.forEach((point: any, idx: number) => {
       if (point.score > 0.3) {
         const x = point.x * scaleX;
         const y = point.y * scaleY;
         const confidence = point.score;
-        const size = 4 + confidence * 6; // Size based on confidence
+        
+        // MoveNet-style box size based on confidence
+        const boxSize = 12 + confidence * 8;
+        
+        // Draw MoveNet box (green rectangle around keypoint)
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.8;
+        ctx.strokeRect(x - boxSize / 2, y - boxSize / 2, boxSize, boxSize);
+        ctx.globalAlpha = 1.0;
+        
+        // Draw center circle
+        const circleSize = 3 + confidence * 3;
         
         // Outer glow (dark background)
         ctx.beginPath();
-        ctx.arc(x, y, size + 3, 0, 2 * Math.PI);
+        ctx.arc(x, y, circleSize + 2, 0, 2 * Math.PI);
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fill();
         
         // Main keypoint (bright green)
         ctx.beginPath();
-        ctx.arc(x, y, size, 0, 2 * Math.PI);
+        ctx.arc(x, y, circleSize, 0, 2 * Math.PI);
         ctx.fillStyle = "#00ff00";
         ctx.fill();
-        
-        // Highlight circle
-        ctx.beginPath();
-        ctx.arc(x, y, size - 1, 0, 2 * Math.PI);
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1;
-        ctx.stroke();
       }
     });
 
@@ -426,25 +440,13 @@ export function VideoInput({
         const minY = Math.min(...yCoords);
         const maxY = Math.max(...yCoords);
         
-        const padding = 10;
+        const padding = 15;
         
-        // Bounding box with rounded corners
+        // Main bounding box - bright green
         ctx.strokeStyle = "#00ff00";
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.6;
-        
-        ctx.beginPath();
-        ctx.moveTo(minX - padding + 5, minY - padding);
-        ctx.lineTo(maxX + padding - 5, minY - padding);
-        ctx.quadraticCurveTo(maxX + padding, minY - padding, maxX + padding, minY - padding + 5);
-        ctx.lineTo(maxX + padding, maxY + padding - 5);
-        ctx.quadraticCurveTo(maxX + padding, maxY + padding, maxX + padding - 5, maxY + padding);
-        ctx.lineTo(minX - padding + 5, maxY + padding);
-        ctx.quadraticCurveTo(minX - padding, maxY + padding, minX - padding, maxY + padding - 5);
-        ctx.lineTo(minX - padding, minY - padding + 5);
-        ctx.quadraticCurveTo(minX - padding, minY - padding, minX - padding + 5, minY - padding);
-        ctx.stroke();
-        
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.7;
+        ctx.strokeRect(minX - padding, minY - padding, maxX - minX + padding * 2, maxY - minY + padding * 2);
         ctx.globalAlpha = 1.0;
       }
     }
