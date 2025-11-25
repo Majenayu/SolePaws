@@ -4,28 +4,8 @@ import { storage } from "./storage";
 import { audioAnalyzer } from "./audio-analyzer";
 import { analyzeAudioSchema } from "@shared/schema";
 import { z } from "zod";
-import { PoseLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
-let poseLandmarker: PoseLandmarker | null = null;
-
-async function initializePoseDetector() {
-  try {
-    const vision = await FilesetResolver.forVisionOnServer();
-    poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/image_classifier/mobilenet_v3_small/float32/1model.tflite`,
-      },
-      runningMode: "IMAGE",
-    });
-    console.log("PoseLandmarker initialized");
-  } catch (error) {
-    console.warn("Failed to initialize PoseLandmarker:", error);
-  }
-}
-
-initializePoseDetector();
-
-// Analyze animal behavior from skeleton keypoints
+// Analyze animal behavior from skeleton keypoints for emotion detection
 function analyzeAnimalBehavior(keypoints: any[], animal: string) {
   const emotions = {
     happiness: 0,
@@ -39,67 +19,123 @@ function analyzeAnimalBehavior(keypoints: any[], animal: string) {
     anxiety: 0,
   };
 
-  if (!keypoints || keypoints.length < 5) return emotions;
+  if (!keypoints || keypoints.length < 10) {
+    // Return default distribution if not enough keypoints
+    emotions.alertness = 0.5;
+    emotions.contentment = 0.3;
+    return emotions;
+  }
 
-  // Extract key body positions
+  // Extract key body positions (17-keypoint format)
   const nose = keypoints[0];
+  const leftEye = keypoints[1];
+  const rightEye = keypoints[2];
   const leftShoulder = keypoints[5];
   const rightShoulder = keypoints[6];
   const leftHip = keypoints[11];
   const rightHip = keypoints[12];
+  const leftKnee = keypoints[13];
+  const rightKnee = keypoints[14];
 
-  if (!nose || !leftShoulder || !rightShoulder) return emotions;
-
-  // Calculate postural features
-  const shoulderWidth = Math.abs(rightShoulder.x - leftShoulder.x);
-  const shoulderHeight = (leftShoulder.y + rightShoulder.y) / 2;
-  const bodyHeight = Math.abs(leftHip.y - shoulderHeight);
-  
-  // Upright posture = alertness/happiness
-  if (bodyHeight > 80) {
-    emotions.alertness += 0.7;
-    emotions.happiness += 0.5;
-  } else {
-    emotions.sadness += 0.5;
+  if (!nose || !leftShoulder || !rightShoulder || !leftHip) {
+    emotions.alertness = 0.4;
+    return emotions;
   }
 
-  // Wide stance = confidence/happiness
+  // 1. POSTURE ANALYSIS (60% of behavior emotion)
+  const shoulderWidth = Math.abs(rightShoulder.x - leftShoulder.x);
+  const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+  const hipY = (leftHip.y + rightHip.y) / 2;
+  const bodyHeight = Math.abs(hipY - shoulderY);
+
+  // Upright body (standing tall) = happiness, alertness, confidence
+  if (bodyHeight > 80) {
+    emotions.happiness += 0.7;
+    emotions.alertness += 0.6;
+    emotions.contentment += 0.4;
+  } else if (bodyHeight < 40) {
+    // Crouched/cowering = fear, anxiety, stress
+    emotions.fear += 0.7;
+    emotions.anxiety += 0.6;
+    emotions.stress += 0.5;
+    emotions.sadness += 0.3;
+  } else {
+    emotions.contentment += 0.5;
+    emotions.alertness += 0.3;
+  }
+
+  // Wide stance (legs spread) = confidence, happiness, playfulness
   if (shoulderWidth > 120) {
     emotions.happiness += 0.6;
     emotions.contentment += 0.5;
-  } else {
-    emotions.anxiety += 0.4;
+    emotions.comfort += 0.4;
+  } else if (shoulderWidth < 60) {
+    // Narrow stance = anxiety, fear, tension
+    emotions.anxiety += 0.5;
+    emotions.stress += 0.4;
     emotions.fear += 0.3;
   }
 
-  // Head position relative to shoulders
+  // 2. HEAD POSITION (20% of behavior emotion)
   const noseX = nose.x;
   const shoulderCenterX = (leftShoulder.x + rightShoulder.x) / 2;
   const headTilt = Math.abs(noseX - shoulderCenterX);
+  const headHeight = nose.y;
 
-  if (headTilt < 30) {
-    emotions.contentment += 0.5;
-    emotions.comfort += 0.6;
-  } else if (headTilt > 80) {
-    emotions.alertness += 0.7;
-    emotions.aggression += 0.4;
+  // Head held high = confidence, happiness
+  if (headHeight < shoulderY - 30) {
+    emotions.happiness += 0.5;
+    emotions.alertness += 0.4;
+    emotions.contentment += 0.3;
   }
 
-  // Movement intensity (keypoint confidence variation)
-  const confidences = keypoints.map((k: any) => k.score || 0);
+  // Head turned away = fear, avoidance
+  if (headTilt > 100) {
+    emotions.fear += 0.4;
+    emotions.anxiety += 0.3;
+  } else if (headTilt < 20) {
+    // Head centered/forward = focused, alert
+    emotions.alertness += 0.5;
+    emotions.aggression += 0.3;
+  }
+
+  // 3. MOVEMENT INTENSITY (20% of behavior emotion)
+  const confidences = keypoints.map((k: any) => k.score || 0.5);
   const avgConfidence = confidences.reduce((a: number, b: number) => a + b, 0) / confidences.length;
-  
-  if (avgConfidence > 0.8) {
+
+  // High confidence = clear movement, alertness
+  if (avgConfidence > 0.75) {
     emotions.alertness += 0.6;
+    emotions.aggression += 0.3;
   } else if (avgConfidence < 0.5) {
-    emotions.stress += 0.5;
-    emotions.anxiety += 0.4;
+    // Low confidence = uncertain, anxious movement
+    emotions.anxiety += 0.6;
+    emotions.stress += 0.4;
+    emotions.fear += 0.3;
   }
 
-  // Normalize emotions to 0-1 range
-  Object.keys(emotions).forEach(emotion => {
-    emotions[emotion] = Math.min(emotions[emotion] / 2, 1);
-  });
+  // 4. LIMB POSITION (10% of behavior emotion)
+  if (leftKnee && rightKnee) {
+    const legSpread = Math.abs(rightKnee.x - leftKnee.x);
+    
+    // Wide leg spread = playfulness, comfort
+    if (legSpread > 100) {
+      emotions.happiness += 0.4;
+      emotions.comfort += 0.3;
+    } else {
+      // Legs together = tense, fearful
+      emotions.stress += 0.3;
+      emotions.anxiety += 0.2;
+    }
+  }
+
+  // Normalize emotions to 0-1 range and ensure they sum properly
+  const total = Object.values(emotions).reduce((a, b) => a + b, 0);
+  if (total > 0) {
+    Object.keys(emotions).forEach(emotion => {
+      emotions[emotion] = Math.min(emotions[emotion] / total, 1);
+    });
+  }
 
   return emotions;
 }
