@@ -342,24 +342,7 @@ export function VideoInput({
   const drawSkeletonScaled = (ctx: CanvasRenderingContext2D, pose: any, scaleX: number, scaleY: number) => {
     const keypoints = pose.keypoints || [];
 
-    // Draw keypoints as circles
-    keypoints.forEach((point: any) => {
-      if (point.score > 0.3) {
-        const x = point.x * scaleX;
-        const y = point.y * scaleY;
-        
-        ctx.beginPath();
-        ctx.arc(x, y, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = "#00ff00";
-        ctx.fill();
-        
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-    });
-
-    // Draw skeleton connections
+    // Draw skeleton connections first (so they appear behind keypoints)
     const connections = pose.skeleton || [];
     connections.forEach(([start, end]: [number, number]) => {
       if (keypoints[start] && keypoints[end]) {
@@ -372,17 +355,92 @@ export function VideoInput({
           const endX = endPoint.x * scaleX;
           const endY = endPoint.y * scaleY;
 
+          // Outer glow line (dark for contrast)
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+          ctx.lineWidth = 6;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.stroke();
+
+          // Main skeleton line (bright green)
           ctx.beginPath();
           ctx.moveTo(startX, startY);
           ctx.lineTo(endX, endY);
           ctx.strokeStyle = "#00ff00";
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 4;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
           ctx.stroke();
         }
       }
     });
+
+    // Draw keypoints as larger circles with better visibility
+    keypoints.forEach((point: any, idx: number) => {
+      if (point.score > 0.3) {
+        const x = point.x * scaleX;
+        const y = point.y * scaleY;
+        const confidence = point.score;
+        const size = 4 + confidence * 6; // Size based on confidence
+        
+        // Outer glow (dark background)
+        ctx.beginPath();
+        ctx.arc(x, y, size + 3, 0, 2 * Math.PI);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fill();
+        
+        // Main keypoint (bright green)
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, 2 * Math.PI);
+        ctx.fillStyle = "#00ff00";
+        ctx.fill();
+        
+        // Highlight circle
+        ctx.beginPath();
+        ctx.arc(x, y, size - 1, 0, 2 * Math.PI);
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    });
+
+    // Draw bounding box around detected pose
+    if (keypoints.length > 0) {
+      const validPoints = keypoints.filter((p: any) => p.score > 0.3);
+      if (validPoints.length > 0) {
+        const xCoords = validPoints.map((p: any) => p.x * scaleX);
+        const yCoords = validPoints.map((p: any) => p.y * scaleY);
+        
+        const minX = Math.min(...xCoords);
+        const maxX = Math.max(...xCoords);
+        const minY = Math.min(...yCoords);
+        const maxY = Math.max(...yCoords);
+        
+        const padding = 10;
+        
+        // Bounding box with rounded corners
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.6;
+        
+        ctx.beginPath();
+        ctx.moveTo(minX - padding + 5, minY - padding);
+        ctx.lineTo(maxX + padding - 5, minY - padding);
+        ctx.quadraticCurveTo(maxX + padding, minY - padding, maxX + padding, minY - padding + 5);
+        ctx.lineTo(maxX + padding, maxY + padding - 5);
+        ctx.quadraticCurveTo(maxX + padding, maxY + padding, maxX + padding - 5, maxY + padding);
+        ctx.lineTo(minX - padding + 5, maxY + padding);
+        ctx.quadraticCurveTo(minX - padding, maxY + padding, minX - padding, maxY + padding - 5);
+        ctx.lineTo(minX - padding, minY - padding + 5);
+        ctx.quadraticCurveTo(minX - padding, minY - padding, minX - padding + 5, minY - padding);
+        ctx.stroke();
+        
+        ctx.globalAlpha = 1.0;
+      }
+    }
   };
 
   return (
