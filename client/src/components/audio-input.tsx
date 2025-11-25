@@ -154,7 +154,7 @@ export function AudioInput({
       
       // Max out audio volume with Web Audio API for loudest playback
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const source = audioContext.createMediaElementAudioSource(audioElement);
+      const source = audioContext.createMediaElementSource(audioElement);
       const gainNode = audioContext.createGain();
       
       // Set gain to maximum
