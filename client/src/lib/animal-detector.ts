@@ -1,6 +1,18 @@
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import "@tensorflow/tfjs";
 
+export interface AnimalDetection {
+  class: string;
+  score: number;
+  bbox: [number, number, number, number]; // [x, y, width, height]
+}
+
+export interface DetectionResult {
+  animal: string;
+  confidence: number;
+  detections: AnimalDetection[];
+}
+
 export class AnimalDetector {
   private model: cocoSsd.ObjectDetection | null = null;
   private initialized = false;
@@ -17,7 +29,7 @@ export class AnimalDetector {
     }
   }
 
-  async detectAnimals(videoElement: HTMLVideoElement): Promise<{ animal: string; confidence: number } | null> {
+  async detectAnimals(videoElement: HTMLVideoElement): Promise<DetectionResult | null> {
     if (!this.initialized || !this.model) {
       return null;
     }
@@ -26,9 +38,9 @@ export class AnimalDetector {
       const predictions = await this.model.detect(videoElement);
       
       // Filter for animal classes
-      const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe"];
+      const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken"];
       const animalPredictions = predictions.filter(pred => 
-        animalClasses.includes(pred.class.toLowerCase())
+        animalClasses.includes(pred.class.toLowerCase()) && pred.score > 0.3
       );
 
       if (animalPredictions.length === 0) {
@@ -41,11 +53,16 @@ export class AnimalDetector {
       );
 
       // Map detected animal to our supported types
-      let mappedAnimal = this.mapToSupportedAnimal(bestDetection.class.toLowerCase());
+      const mappedAnimal = this.mapToSupportedAnimal(bestDetection.class.toLowerCase());
 
       return {
         animal: mappedAnimal,
-        confidence: bestDetection.score
+        confidence: bestDetection.score,
+        detections: animalPredictions.map(pred => ({
+          class: pred.class,
+          score: pred.score,
+          bbox: pred.bbox as [number, number, number, number]
+        }))
       };
     } catch (error) {
       console.error("Animal detection error:", error);
@@ -58,7 +75,7 @@ export class AnimalDetector {
     const mapping: Record<string, string> = {
       "dog": "dog",
       "cat": "cat",
-      "bird": "lovebirds",  // Generic bird -> lovebirds
+      "bird": "lovebirds",
       "chicken": "chicken",
       "pigeon": "pigeon"
     };
