@@ -68,12 +68,13 @@ export default function Admin() {
 
     setIsUploading(true);
     try {
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const audioContext = new AudioContext();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      // Create simple hash from audio data
-      const audioHash = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(arrayBuffer)).slice(0, 100)));
+      // Convert file to base64 for transmission
+      const reader = new FileReader();
+      const audioData = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(selectedFile);
+      });
 
       const res = await fetch("/api/training-samples", {
         method: "POST",
@@ -81,12 +82,15 @@ export default function Admin() {
         body: JSON.stringify({
           animal: selectedAnimal,
           emotion: selectedEmotion,
-          audioHash,
+          audioData,
           fileName: selectedFile.name,
         }),
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Upload failed");
+      }
 
       toast({
         title: "Training sample uploaded",
@@ -97,7 +101,6 @@ export default function Admin() {
       setSelectedAnimal("");
       setSelectedEmotion("");
       loadTrainingSamples();
-      audioContext.close();
     } catch (error) {
       toast({
         title: "Upload failed",
