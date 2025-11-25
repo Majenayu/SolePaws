@@ -15,18 +15,32 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const upload = multer({
   dest: os.tmpdir(),
-  limits: { fileSize: 50 * 1024 * 1024 }
+  limits: { fileSize: 200 * 1024 * 1024 }
 });
 
 // Extract audio from video and convert to PCM for analysis
 async function extractAudioFromVideo(videoPath: string): Promise<{ buffer: Buffer; sampleRate: number }> {
   const outputPath = path.join(os.tmpdir(), `audio-${Date.now()}.wav`);
   
+  // Verify file exists and has content
+  try {
+    const stats = await fs.stat(videoPath);
+    if (stats.size === 0) {
+      throw new Error('Video file is empty');
+    }
+    console.log(`Processing video file (${(stats.size / 1024 / 1024).toFixed(2)}MB)...`);
+  } catch (error) {
+    throw new Error(`Cannot access video file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+  
   return new Promise((resolve, reject) => {
-    ffmpeg(videoPath)
+    const ffmpegCmd = ffmpeg(videoPath)
       .toFormat('wav')
       .audioChannels(1)
       .audioFrequency(44100)
+      .audioCodec('pcm_s16le');
+    
+    ffmpegCmd
       .on('end', async () => {
         try {
           const audioBuffer = await fs.readFile(outputPath);
@@ -35,16 +49,20 @@ async function extractAudioFromVideo(videoPath: string): Promise<{ buffer: Buffe
           // Skip WAV header (44 bytes) to get raw PCM data
           const pcmData = audioBuffer.slice(44);
           
+          console.log(`Audio extraction complete: ${(pcmData.length / 1024).toFixed(2)}KB extracted`);
+          
           resolve({
             buffer: pcmData,
             sampleRate: 44100
           });
         } catch (error) {
+          try { await fs.unlink(outputPath); } catch {}
           reject(error);
         }
       })
       .on('error', (error: Error) => {
-        reject(error);
+        console.error('FFmpeg processing error:', error.message);
+        reject(new Error(`Audio extraction failed: ${error.message}`));
       })
       .save(outputPath);
   });
