@@ -180,7 +180,10 @@ export function VideoInput({
       const videoUrl = URL.createObjectURL(videoBlob);
       if (videoRef.current) {
         videoRef.current.src = videoUrl;
-        videoRef.current.play().catch(e => console.error('Video playback error:', e));
+        // Wait for video to be loadable before playing
+        videoRef.current.oncanplay = () => {
+          videoRef.current?.play().catch(e => console.error('Video playback error:', e));
+        };
       }
 
       // Start skeleton detection while video plays
