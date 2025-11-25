@@ -50,6 +50,27 @@ export default function Home() {
                 >
                   {currentAnalysis.animal}
                 </div>
+
+                <div className="mt-6 pt-6 border-t border-border">
+                  <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                    Emotion Analysis
+                  </div>
+                  <div 
+                    className="text-2xl font-bold text-foreground capitalize mb-2"
+                    data-testid="text-emotion-left"
+                  >
+                    {currentAnalysis.dominantEmotion}
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span 
+                      className="text-lg font-mono font-bold text-primary"
+                      data-testid="text-confidence-left"
+                    >
+                      {Math.round(currentAnalysis.emotionScores[currentAnalysis.dominantEmotion] * 100)}%
+                    </span>
+                    <span className="text-xs text-muted-foreground">confidence</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>

@@ -148,14 +148,28 @@ export function AudioInput({
     onAnalyzing(true);
 
     try {
-      // Play the audio immediately
+      // Play the audio immediately at maximum volume
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
+      
+      // Max out audio volume with Web Audio API for loudest playback
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaElementAudioSource(audioElement);
+      const gainNode = audioContext.createGain();
+      
+      // Set gain to maximum
+      gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
+      
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Also set element volume to max
+      audioElement.volume = 1.0;
       audioElement.play().catch(e => console.error('Playback error:', e));
 
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const audioContext = new AudioContext();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const decodingContext = new AudioContext();
+      const audioBuffer = await decodingContext.decodeAudioData(arrayBuffer);
       
       const durationSeconds = audioBuffer.duration;
       if (durationSeconds > 30) {
@@ -211,7 +225,7 @@ export function AudioInput({
         int16Array[i] = Math.max(-32768, Math.min(32767, channelData[i] * 32768));
       }
       
-      audioContext.close();
+      decodingContext.close();
       
       const res = await apiRequest(
         'POST',
