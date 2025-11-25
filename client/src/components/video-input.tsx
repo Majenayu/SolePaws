@@ -176,6 +176,65 @@ export function VideoInput({
     onAnalyzing(true);
 
     try {
+      // Display and play the video
+      const videoUrl = URL.createObjectURL(videoBlob);
+      if (videoRef.current) {
+        videoRef.current.src = videoUrl;
+        videoRef.current.play().catch(e => console.error('Video playback error:', e));
+      }
+
+      // Start skeleton detection while video plays
+      if (videoRef.current && canvasRef.current && poseDetectorRef.current) {
+        const detectPoses = async () => {
+          try {
+            if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) {
+              // Stop detection when video finishes
+              if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+              }
+              return;
+            }
+
+            const poses = await poseDetectorRef.current!.estimatePoses(videoRef.current);
+            
+            if (poses && poses.length > 0 && canvasRef.current) {
+              const pose = poses[0];
+              setPoseData(pose);
+
+              // Draw video frame and skeleton
+              const ctx = canvasRef.current.getContext("2d");
+              if (ctx && videoRef.current) {
+                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+                drawSkeleton(ctx, pose);
+                
+                // Draw animal name if detected
+                if (detectedAnimal) {
+                  ctx.fillStyle = "#00ff00";
+                  ctx.font = "bold 16px Arial";
+                  ctx.fillText(detectedAnimal.toUpperCase(), 10, 30);
+                }
+              }
+
+              // Auto-detect animal from pose
+              const confidence = pose.score || 0.5;
+              const animalType = confidence > 0.6 ? "dog" : "cat";
+              setDetectedAnimal(animalType);
+              if (onAnimalDetected) onAnimalDetected(animalType as AnimalType);
+            }
+          } catch (error) {
+            console.error("Pose detection error:", error);
+          }
+
+          animationFrameRef.current = requestAnimationFrame(detectPoses);
+        };
+
+        detectPoses();
+      }
+
+      // Wait a bit for video to load, then analyze
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const formData = new FormData();
       formData.append("video", videoBlob);
       formData.append("animal", selectedAnimal || "unknown");
@@ -193,7 +252,17 @@ export function VideoInput({
         title: "Analysis complete",
         description: `Detected: ${analysis.animal} - Emotion: ${analysis.dominantEmotion}`,
       });
+
+      // Cleanup
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      URL.revokeObjectURL(videoUrl);
     } catch (error) {
+      console.error('Video analysis error:', error);
       toast({
         title: "Analysis failed",
         description: error instanceof Error ? error.message : "Unknown error",

@@ -152,6 +152,11 @@ export function AudioInput({
     onAnalyzing(true);
 
     try {
+      // Play the audio immediately
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioElement = new Audio(audioUrl);
+      audioElement.play().catch(e => console.error('Playback error:', e));
+
       const arrayBuffer = await audioBlob.arrayBuffer();
       const audioContext = new AudioContext();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -164,6 +169,8 @@ export function AudioInput({
           variant: "destructive",
         });
         audioContext.close();
+        audioElement.pause();
+        URL.revokeObjectURL(audioUrl);
         return;
       }
       
@@ -243,6 +250,10 @@ export function AudioInput({
         title: "Analysis complete",
         description: `Detected ${analysis.dominantEmotion} with ${Math.round(analysis.emotionScores[analysis.dominantEmotion] * 100)}% confidence`,
       });
+      
+      // Cleanup
+      audioElement.pause();
+      URL.revokeObjectURL(audioUrl);
     } catch (error) {
       console.error('Analysis error:', error);
       toast({

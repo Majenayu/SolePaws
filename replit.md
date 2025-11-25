@@ -95,3 +95,6 @@ Preferred communication style: Simple, everyday language.
 - **Implemented Pose Detection Framework** for skeleton tracking and animal posture analysis
 - **Enhanced Emotion Classification** to support both audio and visual features
 - **Multi-modal Analysis** combining vocal and behavioral indicators for more accurate emotion detection
+- **Implemented Auto-Playback for Demo Samples**: Audio samples now play immediately when clicked, video samples display and play with real-time skeleton overlay + animal name
+- **Real-time Skeleton Detection While Playing**: Video samples show green skeleton keypoints and connections overlaid on the playing video, with animal species detected and displayed
+- **Emotion Detection During Playback**: Emotion analysis results shown in circular visualization as samples play through, with confidence scores for all 9 emotions
