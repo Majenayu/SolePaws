@@ -4,7 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
-import Admin from "@/pages/admin";
+import AdminAudio from "@/pages/admin-audio";
+import AdminVideo from "@/pages/admin-video";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 import { Lock } from "lucide-react";
@@ -14,7 +15,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/admin/audio" component={AdminAudio} />
+      <Route path="/admin/video" component={AdminVideo} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -26,7 +28,7 @@ function SecretIcon() {
 
   const handleDoubleClick = () => {
     setClickCount(0);
-    navigate("/admin");
+    navigate("/admin/audio");
   };
 
   return (
