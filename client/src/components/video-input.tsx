@@ -250,34 +250,41 @@ export function VideoInput({
             if (poseDetectorRef.current && canvasRef.current && detectorsReady) {
               const poses = await poseDetectorRef.current.estimatePoses(videoRef.current);
               
-              if (poses && poses.length > 0 && videoRef.current) {
-                const pose = poses[0];
-                setPoseData(pose);
+              const canvas = canvasRef.current;
+              const video = videoRef.current;
+              
+              const rect = canvas.getBoundingClientRect();
+              canvas.width = rect.width;
+              canvas.height = rect.height;
 
-                const canvas = canvasRef.current;
-                const video = videoRef.current;
+              const ctx = canvas.getContext("2d", { willReadFrequently: true });
+              if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
-                const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
+                const scaleX = canvas.width / (video.videoWidth || 640);
+                const scaleY = canvas.height / (video.videoHeight || 480);
 
-                const ctx = canvas.getContext("2d", { willReadFrequently: true });
-                if (ctx) {
-                  ctx.clearRect(0, 0, canvas.width, canvas.height);
-                  
-                  const scaleX = canvas.width / (video.videoWidth || 640);
-                  const scaleY = canvas.height / (video.videoHeight || 480);
-
+                // Draw skeleton and bounding box even if pose detection is weak
+                if (poses && poses.length > 0) {
+                  const pose = poses[0];
+                  setPoseData(pose);
                   drawSkeletonScaled(ctx, pose, scaleX, scaleY);
-                  
-                  if (detectedAnimal) {
-                    ctx.fillStyle = "#00ff00";
-                    ctx.font = "bold 24px Arial";
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = "#000000";
-                    ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
-                    ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
-                  }
+                } else {
+                  // If no pose detected, still draw a bounding box indicator
+                  ctx.strokeStyle = "#00ff00";
+                  ctx.lineWidth = 2;
+                  ctx.globalAlpha = 0.3;
+                  ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+                  ctx.globalAlpha = 1.0;
+                }
+                
+                if (detectedAnimal) {
+                  ctx.fillStyle = "#00ff00";
+                  ctx.font = "bold 24px Arial";
+                  ctx.lineWidth = 3;
+                  ctx.strokeStyle = "#000000";
+                  ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
+                  ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
                 }
               }
             }
