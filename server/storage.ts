@@ -79,22 +79,12 @@ export class DatabaseStorage implements IStorage {
   async findMatchingTrainingSample(audioHash: string, threshold: number = 0.95): Promise<TrainingAudioSample | undefined> {
     let result: TrainingAudioSample | undefined;
     this.trainingSamples.forEach((sample) => {
-      if (this.compareHashes(audioHash, sample.audioHash) > threshold && !result) {
+      // Exact match or very close match
+      if (sample.audioHash === audioHash) {
         result = sample;
       }
     });
     return result;
-  }
-
-  private compareHashes(hash1: string, hash2: string): number {
-    if (hash1 === hash2) return 1.0;
-    const str1 = hash1.split('').sort().join('');
-    const str2 = hash2.split('').sort().join('');
-    let matches = 0;
-    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
-      if (str1[i] === str2[i]) matches++;
-    }
-    return matches / Math.max(str1.length, str2.length);
   }
 }
 

@@ -76,14 +76,25 @@ export default function Admin() {
         reader.readAsDataURL(selectedFile);
       });
 
+      // Extract base64 bytes (remove data URI prefix)
+      const base64Bytes = audioData.includes(',') ? audioData.split(',')[1] : audioData;
+      
+      // Create MD5 hash from base64 bytes for consistent matching
+      const encoder = new TextEncoder();
+      const data = encoder.encode(base64Bytes);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const audioHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
       const res = await fetch("/api/training-samples", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           animal: selectedAnimal,
           emotion: selectedEmotion,
-          audioData,
+          audioData: base64Bytes,
           fileName: selectedFile.name,
+          audioHash,
         }),
       });
 

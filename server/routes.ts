@@ -220,24 +220,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/training-samples', async (req, res) => {
     try {
-      const validated = trainingSampleSchema.parse(req.body);
+      const { animal, emotion, audioData, fileName, audioHash } = req.body;
       
-      const hash = crypto
-        .createHash('md5')
-        .update(validated.audioData)
-        .digest('hex');
+      // Use provided hash if available, otherwise create one from audioData
+      let hash = audioHash;
+      if (!hash && audioData) {
+        hash = crypto
+          .createHash('sha256')
+          .update(audioData)
+          .digest('hex');
+      }
 
       const sample: TrainingAudioSample = {
         id: randomUUID(),
-        animal: validated.animal,
-        emotion: validated.emotion,
-        audioHash: hash,
-        fileName: validated.fileName,
+        animal,
+        emotion,
+        audioHash: hash || 'unknown',
+        fileName,
         createdAt: new Date().toISOString(),
       };
 
       const saved = await storage.saveTrainingSample(sample);
-      console.log(`Training sample saved: ${sample.fileName} (${sample.animal} - ${sample.emotion})`);
+      console.log(`Training sample saved: ${sample.fileName} (${sample.animal} - ${sample.emotion}), hash: ${sample.audioHash}`);
       res.json(saved);
     } catch (error) {
       console.error('Failed to save training sample:', error);

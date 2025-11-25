@@ -23,18 +23,26 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
       
       {currentAnalysis ? (
         <div className="space-y-6">
-          <div className="bg-muted/40 rounded-lg p-4 border border-border">
-            <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+          <div className="bg-muted/40 rounded-lg p-6 border border-border">
+            <div className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               Current Reading
             </div>
+            
             <div 
-              className="text-3xl font-bold text-foreground capitalize mb-2"
+              className="text-5xl font-bold text-primary capitalize mb-4"
+              data-testid="text-current-animal"
+            >
+              {currentAnalysis.animal}
+            </div>
+            
+            <div 
+              className="text-3xl font-bold text-foreground capitalize mb-3"
               data-testid="text-current-emotion"
             >
               {currentAnalysis.dominantEmotion}
             </div>
-            <div className="flex items-baseline gap-2 mb-3">
+            <div className="flex items-baseline gap-2 mb-4">
               <span 
                 className="text-4xl font-mono font-bold text-primary"
                 data-testid="text-current-confidence"
@@ -42,9 +50,6 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
                 {Math.round(currentAnalysis.emotionScores[currentAnalysis.dominantEmotion] * 100)}%
               </span>
               <span className="text-sm text-muted-foreground">confidence</span>
-            </div>
-            <div className="text-xs text-muted-foreground capitalize" data-testid="text-current-animal">
-              {currentAnalysis.animal}
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2" data-testid="text-current-timestamp">
               <Clock className="w-3 h-3" />

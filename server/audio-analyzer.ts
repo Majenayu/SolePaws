@@ -379,8 +379,8 @@ export class AudioAnalyzer {
   async analyze(animal: AnimalType | null, audioBuffer: Buffer, sampleRate: number, storage?: IStorage): Promise<AudioAnalysis> {
     const features = this.extractAudioFeatures(audioBuffer, sampleRate);
     
-    // Create hash from audio data to check training samples
-    const audioHash = crypto.createHash('md5').update(audioBuffer).digest('hex');
+    // Create hash from audio data to check training samples (use SHA-256 for consistency)
+    const audioHash = crypto.createHash('sha256').update(audioBuffer).digest('hex');
     
     // Check if audio matches any training sample
     if (storage) {
