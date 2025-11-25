@@ -58,25 +58,25 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
               <div>
                 <div className="text-muted-foreground">Pitch</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-pitch">
-                  {currentAnalysis.audioFeatures.pitch.toFixed(1)} Hz
+                  {currentAnalysis.audioFeatures?.pitch != null ? `${currentAnalysis.audioFeatures.pitch.toFixed(1)} Hz` : "N/A"}
                 </div>
               </div>
               <div>
                 <div className="text-muted-foreground">Frequency</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-frequency">
-                  {currentAnalysis.audioFeatures.frequency.toFixed(0)} Hz
+                  {currentAnalysis.audioFeatures?.frequency != null ? `${currentAnalysis.audioFeatures.frequency.toFixed(0)} Hz` : "N/A"}
                 </div>
               </div>
               <div>
                 <div className="text-muted-foreground">Amplitude</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-amplitude">
-                  {(currentAnalysis.audioFeatures.amplitude * 100).toFixed(0)}%
+                  {currentAnalysis.audioFeatures?.amplitude != null ? `${(currentAnalysis.audioFeatures.amplitude * 100).toFixed(0)}%` : "N/A"}
                 </div>
               </div>
               <div>
                 <div className="text-muted-foreground">Duration</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-duration">
-                  {currentAnalysis.audioFeatures.duration.toFixed(1)}s
+                  {currentAnalysis.audioFeatures?.duration != null ? `${currentAnalysis.audioFeatures.duration.toFixed(1)}s` : "N/A"}
                 </div>
               </div>
             </div>
