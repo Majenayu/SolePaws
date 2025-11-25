@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 interface EmotionCircleProps {
   analysis: AudioAnalysis | null;
   isAnalyzing: boolean;
+  size?: "full" | "compact";
 }
 
 const emotionConfig: Record<EmotionType, { label: string; icon: typeof Heart; color: string }> = {
@@ -30,7 +31,19 @@ const emotionConfig: Record<EmotionType, { label: string; icon: typeof Heart; co
   alertness: { label: "Alertness", icon: Bell, color: "text-primary" },
 };
 
-export function EmotionCircle({ analysis, isAnalyzing }: EmotionCircleProps) {
+export function EmotionCircle({ analysis, isAnalyzing, size = "full" }: EmotionCircleProps) {
+  const isCompact = size === "compact";
+  const maxWidth = isCompact ? "max-w-[180px]" : "max-w-[400px]";
+  const radiusOuter = isCompact ? 70 : 140;
+  const radiusMid = isCompact ? 50 : 100;
+  const radiusInner = isCompact ? 30 : 60;
+  const emotionRadius = isCompact ? 80 : 160;
+  const barScale = isCompact ? 25 : 50;
+  const circleRadiusDominant = isCompact ? "14" : "28";
+  const circleRadius = isCompact ? "11" : "22";
+  const fontSize = isCompact ? "9px" : undefined;
+  const fontSizeDominant = isCompact ? "9px" : "11px";
+
   const getEmotionAngle = (index: number) => {
     const angleStep = 360 / emotionTypes.length;
     return (angleStep * index - 90) * (Math.PI / 180);
@@ -42,6 +55,117 @@ export function EmotionCircle({ analysis, isAnalyzing }: EmotionCircleProps) {
     const y = Math.sin(angle) * radius;
     return { x, y };
   };
+
+  if (isCompact) {
+    return (
+      <div className="flex items-center justify-center">
+        <div className="relative w-full max-w-[180px] aspect-square">
+          <svg 
+            viewBox="0 0 400 400" 
+            className="w-full h-full"
+            aria-label="Emotion visualization circle"
+          >
+            <circle
+              cx="200"
+              cy="200"
+              r={radiusOuter}
+              fill="none"
+              stroke="hsl(var(--border))"
+              strokeWidth="2"
+              className="opacity-30"
+            />
+            
+            <circle
+              cx="200"
+              cy="200"
+              r={radiusMid}
+              fill="none"
+              stroke="hsl(var(--border))"
+              strokeWidth="2"
+              className="opacity-20"
+            />
+            
+            <circle
+              cx="200"
+              cy="200"
+              r={radiusInner}
+              fill="none"
+              stroke="hsl(var(--border))"
+              strokeWidth="2"
+              className="opacity-10"
+            />
+            
+            {emotionTypes.map((emotion, index) => {
+              const config = emotionConfig[emotion];
+              const pos = getEmotionPosition(index, emotionRadius);
+              const score = analysis?.emotionScores[emotion] || 0;
+              const isDominant = analysis?.dominantEmotion === emotion;
+              const barLength = score * barScale;
+              
+              return (
+                <g key={emotion} data-testid={`emotion-segment-${emotion}`}>
+                  <line
+                    x1="200"
+                    y1="200"
+                    x2={200 + Math.cos(getEmotionAngle(index)) * barLength}
+                    y2={200 + Math.sin(getEmotionAngle(index)) * barLength}
+                    stroke={isDominant ? "hsl(var(--primary))" : "hsl(var(--muted))"}
+                    strokeWidth={isDominant ? "4" : "2"}
+                    className={cn(
+                      "transition-all duration-500",
+                      score > 0 ? "opacity-100" : "opacity-20"
+                    )}
+                    data-testid={`emotion-bar-${emotion}`}
+                  />
+                  
+                  <circle
+                    cx={200 + pos.x}
+                    cy={200 + pos.y}
+                    r={isDominant ? circleRadiusDominant : circleRadius}
+                    fill={isDominant ? "hsl(var(--primary))" : "hsl(var(--card))"}
+                    stroke={isDominant ? "hsl(var(--primary))" : "hsl(var(--border))"}
+                    strokeWidth="1"
+                    className={cn(
+                      "transition-all duration-500",
+                      isDominant && "drop-shadow-lg"
+                    )}
+                    data-testid={`emotion-circle-${emotion}`}
+                  />
+                  
+                  <text
+                    x={200 + pos.x}
+                    y={200 + pos.y}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    className={cn(
+                      "text-xs font-semibold pointer-events-none select-none",
+                      isDominant ? "fill-primary-foreground" : "fill-foreground"
+                    )}
+                    style={{ fontSize: fontSizeDominant }}
+                    data-testid={`emotion-text-${emotion}`}
+                  >
+                    {config.label.slice(0, 3)}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+          
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              {isAnalyzing ? (
+                <div className="animate-pulse">
+                  <div className="text-xs text-muted-foreground mb-1">Analyzing...</div>
+                </div>
+              ) : analysis ? (
+                <div className="text-xs text-muted-foreground">{Math.round(analysis.emotionScores[analysis.dominantEmotion] * 100)}%</div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card className="p-6">

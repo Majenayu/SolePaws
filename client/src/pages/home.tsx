@@ -50,12 +50,12 @@ export default function Home() {
                     Emotion Analysis
                   </div>
                   <div 
-                    className="text-2xl font-bold text-foreground capitalize mb-2"
+                    className="text-2xl font-bold text-foreground capitalize mb-4"
                     data-testid="text-emotion-left"
                   >
                     {currentAnalysis.dominantEmotion}
                   </div>
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-baseline gap-2 mb-6">
                     <span 
                       className="text-lg font-mono font-bold text-primary"
                       data-testid="text-confidence-left"
@@ -64,6 +64,12 @@ export default function Home() {
                     </span>
                     <span className="text-xs text-muted-foreground">confidence</span>
                   </div>
+                  
+                  <EmotionCircle
+                    analysis={currentAnalysis}
+                    isAnalyzing={isAnalyzing}
+                    size="compact"
+                  />
                 </div>
               </div>
             )}
@@ -96,11 +102,6 @@ export default function Home() {
                 />
               </TabsContent>
             </Tabs>
-
-            <EmotionCircle
-              analysis={currentAnalysis}
-              isAnalyzing={isAnalyzing}
-            />
           </div>
 
           <div className="lg:col-span-3">
