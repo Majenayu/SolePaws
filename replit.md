@@ -88,6 +88,20 @@ Preferred communication style: Simple, everyday language.
 
 **Video Processing:** MediaRecorder API for video capture, Canvas 2D for skeleton visualization, custom PoseDetector class for keypoint analysis (foundation for TensorFlow.js/MediaPipe integration).
 
+## Demo Samples
+
+**Audio Samples:**
+- dog_0 (218 KB) - Barking dog showing alertness/aggression
+- anger31-5 (54 KB) - Animal vocalization showing stress/aggression
+
+**Video Samples (Royalty-Free from Pexels):**
+- Barking Dog (6.7 MB) - Dog barking alert state with skeleton tracking
+- Happy Dog (21 MB) - Playful border collie running - happiness/contentment
+- Playful Cats (7.6 MB) - Kittens playing together
+- Cat Playing (15 MB) - Cat playing with toy
+
+All demo samples are pre-embedded in `/public/demo-videos/` and load instantly without downloads.
+
 ## Recent Changes
 
 - **Rebranded** to **SoulPaws** with paw print logo
@@ -98,3 +112,4 @@ Preferred communication style: Simple, everyday language.
 - **Implemented Auto-Playback for Demo Samples**: Audio samples now play immediately when clicked, video samples display and play with real-time skeleton overlay + animal name
 - **Real-time Skeleton Detection While Playing**: Video samples show green skeleton keypoints and connections overlaid on the playing video, with animal species detected and displayed
 - **Emotion Detection During Playback**: Emotion analysis results shown in circular visualization as samples play through, with confidence scores for all 9 emotions
+- **Added Royalty-Free Demo Videos**: Downloaded 4 real animal videos from Pexels (barking dog, happy dog, playful cats, cat with toy) - no synthetic data
