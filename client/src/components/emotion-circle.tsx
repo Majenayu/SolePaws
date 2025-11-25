@@ -33,16 +33,16 @@ const emotionConfig: Record<EmotionType, { label: string; icon: typeof Heart; co
 
 export function EmotionCircle({ analysis, isAnalyzing, size = "full" }: EmotionCircleProps) {
   const isCompact = size === "compact";
-  const maxWidth = isCompact ? "max-w-[180px]" : "max-w-[400px]";
-  const radiusOuter = isCompact ? 70 : 140;
-  const radiusMid = isCompact ? 50 : 100;
-  const radiusInner = isCompact ? 30 : 60;
-  const emotionRadius = isCompact ? 80 : 160;
-  const barScale = isCompact ? 25 : 50;
-  const circleRadiusDominant = isCompact ? "14" : "28";
-  const circleRadius = isCompact ? "11" : "22";
-  const fontSize = isCompact ? "9px" : undefined;
-  const fontSizeDominant = isCompact ? "9px" : "11px";
+  const maxWidth = isCompact ? "max-w-[300px]" : "max-w-[400px]";
+  const radiusOuter = isCompact ? 110 : 140;
+  const radiusMid = isCompact ? 80 : 100;
+  const radiusInner = isCompact ? 50 : 60;
+  const emotionRadius = isCompact ? 130 : 160;
+  const barScale = isCompact ? 40 : 50;
+  const circleRadiusDominant = isCompact ? "20" : "28";
+  const circleRadius = isCompact ? "16" : "22";
+  const fontSize = isCompact ? "10px" : undefined;
+  const fontSizeDominant = isCompact ? "10px" : "11px";
 
   const getEmotionAngle = (index: number) => {
     const angleStep = 360 / emotionTypes.length;
@@ -59,7 +59,7 @@ export function EmotionCircle({ analysis, isAnalyzing, size = "full" }: EmotionC
   if (isCompact) {
     return (
       <div className="flex items-center justify-center">
-        <div className="relative w-full max-w-[180px] aspect-square">
+        <div className="relative w-full max-w-[300px] aspect-square">
           <svg 
             viewBox="0 0 400 400" 
             className="w-full h-full"
