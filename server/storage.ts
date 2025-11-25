@@ -9,6 +9,7 @@ export interface IStorage {
   saveTrainingSample(sample: TrainingAudioSample): Promise<TrainingAudioSample>;
   getTrainingSamples(): Promise<TrainingAudioSample[]>;
   findMatchingTrainingSample(audioHash: string, threshold: number): Promise<TrainingAudioSample | undefined>;
+  deleteTrainingSample(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -85,6 +86,17 @@ export class DatabaseStorage implements IStorage {
       }
     });
     return result;
+  }
+
+  async deleteTrainingSample(id: string): Promise<boolean> {
+    let found = false;
+    this.trainingSamples.forEach((sample, hash) => {
+      if (sample.id === id) {
+        this.trainingSamples.delete(hash);
+        found = true;
+      }
+    });
+    return found;
   }
 }
 

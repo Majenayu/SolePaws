@@ -281,8 +281,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/training-samples/:id', async (_req, res) => {
+  app.delete('/api/training-samples/:id', async (req, res) => {
     try {
+      const success = await storage.deleteTrainingSample(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: 'Training sample not found' });
+      }
       res.json({ success: true });
     } catch (error) {
       console.error('Failed to delete training sample:', error);
