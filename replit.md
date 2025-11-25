@@ -94,13 +94,19 @@ Preferred communication style: Simple, everyday language.
 - dog_0 (218 KB) - Barking dog showing alertness/aggression
 - anger31-5 (54 KB) - Animal vocalization showing stress/aggression
 
-**Video Samples (Royalty-Free from Pexels):**
-- Barking Dog (6.7 MB) - Dog barking alert state with skeleton tracking
-- Happy Dog (21 MB) - Playful border collie running - happiness/contentment
-- Playful Cats (7.6 MB) - Kittens playing together
-- Cat Playing (15 MB) - Cat playing with toy
+**Video Samples (Royalty-Free from Pexels - All 30+ Seconds):**
+- Barking Dog (6.7 MB, ~30 sec) - Dog barking alert state with skeleton tracking
+- Happy Dog (21 MB, **60+ seconds**) - Playful border collie running - happiness/contentment
+- Dog Running (3.1 MB, ~30 sec) - Dog running towards camera - playful mood
+- Playful Cats (7.6 MB, ~40 sec) - Kittens playing together
+- Cat Playing (15 MB, ~50 sec) - Cat playing with toy
 
-All demo samples are pre-embedded in `/public/demo-videos/` and load instantly without downloads.
+**Key Features:**
+- All demo samples are pre-embedded in `/public/demo-videos/` and load instantly without downloads
+- Videos play automatically with visible controls (play, pause, timeline, volume)
+- Real-time skeleton detection overlay while video plays
+- Emotion analysis runs simultaneously with playback
+- All videos are **30+ seconds long** for complete emotion detection
 
 ## Recent Changes
 

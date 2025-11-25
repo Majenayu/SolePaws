@@ -325,21 +325,28 @@ export function VideoInput({
           )}
         </div>
 
-        <div className="relative bg-muted rounded-lg overflow-hidden aspect-video" data-testid="container-video">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-            data-testid="video-preview"
-          />
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0"
-            width={640}
-            height={480}
-            data-testid="canvas-skeleton"
-          />
+        <div className="space-y-2">
+          <div className="relative bg-muted rounded-lg overflow-hidden aspect-video" data-testid="container-video">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              controls
+              controlsList="nodownload"
+              className="w-full h-full object-cover"
+              data-testid="video-preview"
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0"
+              width={640}
+              height={480}
+              data-testid="canvas-skeleton"
+            />
+          </div>
+          <div className="text-xs text-muted-foreground px-1">
+            Video will automatically detect skeleton pose and emotions while playing
+          </div>
         </div>
 
         <div className="flex gap-2">
