@@ -93,7 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const analysis = await audioAnalyzer.analyze(
         validatedData.animal || null, 
         audioBuffer,
-        validatedData.sampleRate
+        validatedData.sampleRate,
+        storage
       );
       
       await storage.saveAnalysis(analysis);
@@ -156,7 +157,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const analysis = await audioAnalyzer.analyze(
         animal as any,
         audioBuffer,
-        sampleRate
+        sampleRate,
+        storage
       );
       
       console.log(`Video emotion analysis complete: ${analysis.dominantEmotion} (confidence: ${(analysis.emotionScores[analysis.dominantEmotion] * 100).toFixed(1)}%)`);

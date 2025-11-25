@@ -1,5 +1,7 @@
 import { AnimalType, EmotionType, AudioAnalysis, emotionTypes } from "@shared/schema";
 import { randomUUID } from "crypto";
+import crypto from "crypto";
+import type { IStorage } from "./storage";
 
 interface AudioFeatures {
   pitch: number;
@@ -374,12 +376,45 @@ export class AudioAnalyzer {
     return scores;
   }
 
-  async analyze(animal: AnimalType | null, audioBuffer: Buffer, sampleRate: number): Promise<AudioAnalysis> {
+  async analyze(animal: AnimalType | null, audioBuffer: Buffer, sampleRate: number, storage?: IStorage): Promise<AudioAnalysis> {
     const features = this.extractAudioFeatures(audioBuffer, sampleRate);
     
-    // Auto-detect animal if not provided
-    const detectedAnimal = animal || this.classifyAnimal(features);
+    // Create hash from audio data to check training samples
+    const audioHash = crypto.createHash('md5').update(audioBuffer).digest('hex');
     
+    // Check if audio matches any training sample
+    if (storage) {
+      const trainingSample = await storage.findMatchingTrainingSample(audioHash, 0.85);
+      if (trainingSample) {
+        console.log(`Found matching training sample: ${trainingSample.fileName}`);
+        
+        // Return matched training data
+        const emotionScores: Record<EmotionType, number> = {
+          fear: 0.05,
+          stress: 0.05,
+          aggression: 0.05,
+          comfort: 0.05,
+          happiness: 0.05,
+          sadness: 0.05,
+          anxiety: 0.05,
+          contentment: 0.05,
+          alertness: 0.05,
+        };
+        emotionScores[trainingSample.emotion] = 0.55;
+        
+        return {
+          id: randomUUID(),
+          animal: trainingSample.animal,
+          timestamp: new Date().toISOString(),
+          dominantEmotion: trainingSample.emotion,
+          emotionScores,
+          audioFeatures: features,
+        };
+      }
+    }
+    
+    // No match found, do analysis
+    const detectedAnimal = animal || this.classifyAnimal(features);
     const emotionScores = this.classifyEmotion(detectedAnimal, features);
     
     let dominantEmotion: EmotionType = 'contentment';
