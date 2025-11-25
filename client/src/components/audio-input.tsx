@@ -212,13 +212,14 @@ export function AudioInput({
       }
       
       const uint8Array = new Uint8Array(int16Array.buffer);
-      const pcmBlob = new Blob([uint8Array], { type: 'audio/pcm' });
       
-      const base64Audio = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(pcmBlob);
-      });
+      // Hash the raw audio bytes with SHA-256 for matching training data
+      const hashBuffer = await crypto.subtle.digest('SHA-256', uint8Array);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const audioHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Convert to base64 for transmission
+      const base64Audio = btoa(String.fromCharCode(...uint8Array));
       
       audioContext.close();
       
@@ -228,7 +229,8 @@ export function AudioInput({
         {
           audioData: base64Audio,
           sampleRate,
-          fileName: fileName || 'recording.wav'
+          fileName: fileName || 'recording.wav',
+          audioHash
         }
       );
       

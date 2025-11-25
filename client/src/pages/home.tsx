@@ -39,6 +39,19 @@ export default function Home() {
       <main className="max-w-7xl mx-auto p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
           <div className="lg:col-span-3 space-y-4 lg:space-y-6">
+            {currentAnalysis && (
+              <div className="bg-card rounded-lg p-6 border border-border">
+                <div className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
+                  Current Animal
+                </div>
+                <div 
+                  className="text-5xl font-bold text-primary capitalize"
+                  data-testid="text-animal-left"
+                >
+                  {currentAnalysis.animal}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-6 space-y-4 lg:space-y-6">

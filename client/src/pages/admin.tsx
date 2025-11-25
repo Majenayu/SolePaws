@@ -68,23 +68,17 @@ export default function Admin() {
 
     setIsUploading(true);
     try {
-      // Convert file to base64 for transmission
-      const reader = new FileReader();
-      const audioData = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(selectedFile);
-      });
-
-      // Extract base64 bytes (remove data URI prefix)
-      const base64Bytes = audioData.includes(',') ? audioData.split(',')[1] : audioData;
+      // Read file as ArrayBuffer to get raw bytes
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const audioBytes = new Uint8Array(arrayBuffer);
       
-      // Create MD5 hash from base64 bytes for consistent matching
-      const encoder = new TextEncoder();
-      const data = encoder.encode(base64Bytes);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      // Hash the raw audio bytes with SHA-256
+      const hashBuffer = await crypto.subtle.digest('SHA-256', audioBytes);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const audioHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Convert to base64 for transmission
+      const base64Audio = btoa(String.fromCharCode(...audioBytes));
 
       const res = await fetch("/api/training-samples", {
         method: "POST",
@@ -92,7 +86,7 @@ export default function Admin() {
         body: JSON.stringify({
           animal: selectedAnimal,
           emotion: selectedEmotion,
-          audioData: base64Bytes,
+          audioData: base64Audio,
           fileName: selectedFile.name,
           audioHash,
         }),

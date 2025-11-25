@@ -30,13 +30,6 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
             </div>
             
             <div 
-              className="text-5xl font-bold text-primary capitalize mb-4"
-              data-testid="text-current-animal"
-            >
-              {currentAnalysis.animal}
-            </div>
-            
-            <div 
               className="text-3xl font-bold text-foreground capitalize mb-3"
               data-testid="text-current-emotion"
             >
