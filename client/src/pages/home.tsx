@@ -1,18 +1,15 @@
 import { useState } from "react";
-import { AnimalType, AudioAnalysis } from "@shared/schema";
-import { PetSelector } from "@/components/pet-selector";
+import { AudioAnalysis } from "@shared/schema";
 import { AudioInput } from "@/components/audio-input";
 import { VideoInput } from "@/components/video-input";
 import { EmotionCircle } from "@/components/emotion-circle";
 import { AudioWaveform } from "@/components/audio-waveform";
 import { ResultsPanel } from "@/components/results-panel";
-import { DatasetGuide } from "@/components/dataset-guide";
 import { DemoSamples } from "@/components/demo-samples";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Video } from "lucide-react";
 
 export default function Home() {
-  const [selectedAnimal, setSelectedAnimal] = useState<AnimalType | null>(null);
   const [currentAnalysis, setCurrentAnalysis] = useState<AudioAnalysis | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AudioAnalysis[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -44,10 +41,6 @@ export default function Home() {
       <main className="max-w-7xl mx-auto p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
           <div className="lg:col-span-3 space-y-4 lg:space-y-6">
-            <PetSelector
-              selectedAnimal={selectedAnimal}
-              onSelectAnimal={setSelectedAnimal}
-            />
             <DemoSamples 
               onAudioSampleLoad={(file) => {
                 setSampleFile(file);
@@ -58,7 +51,6 @@ export default function Home() {
                 setAnalysisMode("video");
               }}
             />
-            {selectedAnimal && <DatasetGuide selectedAnimal={selectedAnimal} />}
           </div>
 
           <div className="lg:col-span-6 space-y-4 lg:space-y-6">
@@ -76,11 +68,9 @@ export default function Home() {
 
               <TabsContent value="audio" className="space-y-4">
                 <AudioInput
-                  selectedAnimal={selectedAnimal}
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
                   onAudioData={handleAudioData}
-                  onAnimalDetected={setSelectedAnimal}
                   sampleFile={analysisMode === "audio" ? sampleFile || undefined : undefined}
                 />
 
@@ -92,10 +82,8 @@ export default function Home() {
 
               <TabsContent value="video" className="space-y-4">
                 <VideoInput
-                  selectedAnimal={selectedAnimal}
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
-                  onAnimalDetected={setSelectedAnimal}
                   sampleFile={analysisMode === "video" ? sampleFile || undefined : undefined}
                 />
               </TabsContent>

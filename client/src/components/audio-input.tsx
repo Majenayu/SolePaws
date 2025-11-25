@@ -2,25 +2,21 @@ import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mic, Upload, Square, Loader2 } from "lucide-react";
-import { AnimalType, AudioAnalysis } from "@shared/schema";
+import { AudioAnalysis } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 interface AudioInputProps {
-  selectedAnimal: AnimalType | null;
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
   onAudioData: (data: number[]) => void;
-  onAnimalDetected?: (animal: AnimalType) => void;
   sampleFile?: File;
 }
 
 export function AudioInput({ 
-  selectedAnimal, 
   onAnalysisComplete, 
   onAnalyzing,
   onAudioData,
-  onAnimalDetected,
   sampleFile
 }: AudioInputProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -230,7 +226,6 @@ export function AudioInput({
         'POST',
         '/api/analyze',
         {
-          animal: selectedAnimal || undefined,
           audioData: base64Audio,
           sampleRate,
           fileName: fileName || 'recording.wav'
@@ -238,11 +233,6 @@ export function AudioInput({
       );
       
       const analysis: AudioAnalysis = await res.json();
-      
-      // Auto-select animal if it was detected
-      if (!selectedAnimal && onAnimalDetected) {
-        onAnimalDetected(analysis.animal);
-      }
       
       onAnalysisComplete(analysis);
       

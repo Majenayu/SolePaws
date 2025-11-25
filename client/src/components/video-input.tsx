@@ -8,18 +8,14 @@ import { PoseDetector } from "@/lib/pose-detector";
 import { AnimalDetector } from "@/lib/animal-detector";
 
 interface VideoInputProps {
-  selectedAnimal: AnimalType | null;
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
-  onAnimalDetected?: (animal: AnimalType) => void;
   sampleFile?: File;
 }
 
 export function VideoInput({
-  selectedAnimal,
   onAnalysisComplete,
   onAnalyzing,
-  onAnimalDetected,
   sampleFile,
 }: VideoInputProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -110,7 +106,6 @@ export function VideoInput({
             const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
             if (detection && detection.confidence > 0.5) {
               setDetectedAnimal(detection.animal);
-              if (onAnimalDetected) onAnimalDetected(detection.animal as AnimalType);
             }
           }
 
@@ -248,7 +243,6 @@ export function VideoInput({
               const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
               if (detection && detection.confidence > 0.5) {
                 setDetectedAnimal(detection.animal);
-                if (onAnimalDetected) onAnimalDetected(detection.animal as AnimalType);
               }
             }
 
@@ -302,7 +296,7 @@ export function VideoInput({
       // Send video to backend for audio extraction and emotion analysis
       const formData = new FormData();
       formData.append("video", videoBlob);
-      formData.append("animal", selectedAnimal || detectedAnimal || "unknown");
+      formData.append("animal", detectedAnimal || "unknown");
 
       const response = await fetch("/api/analyze-video", {
         method: "POST",
@@ -315,6 +309,11 @@ export function VideoInput({
       }
 
       const analysis: any = await response.json();
+      
+      // Auto-detect animal if not already set
+      if (analysis.animal) {
+        setDetectedAnimal(analysis.animal);
+      }
 
       onAnalysisComplete(analysis);
 
