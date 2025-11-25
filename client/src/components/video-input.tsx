@@ -105,9 +105,11 @@ export function VideoInput({
           // Detect animal in video
           if (animalDetectorRef.current) {
             const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
-            if (detection && detection.confidence > 0.5) {
+            console.log('Animal detection result (recording):', detection);
+            if (detection && detection.confidence > 0.3) {
               setDetectedAnimal(detection.animal);
               setAnimalDetections(detection.detections || []);
+              console.log('Set animal detections:', detection.detections);
             } else {
               // Clear detections when no animals are found
               setDetectedAnimal(null);
@@ -251,9 +253,11 @@ export function VideoInput({
             // Detect animal
             if (animalDetectorRef.current && detectorsReady) {
               const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
-              if (detection && detection.confidence > 0.5) {
+              console.log('Animal detection result (playback):', detection);
+              if (detection && detection.confidence > 0.3) {
                 setDetectedAnimal(detection.animal);
                 setAnimalDetections(detection.detections || []);
+                console.log('Set animal detections (playback):', detection.detections);
               } else {
                 // Clear detections when no animals are found
                 setDetectedAnimal(null);
@@ -364,6 +368,8 @@ export function VideoInput({
     scaleX: number,
     scaleY: number
   ) => {
+    console.log(`Drawing ${detections.length} animal detections`, detections);
+    
     // Color palette for different animal types
     const animalColors: Record<string, string> = {
       dog: "#FF4444",      // Red
@@ -380,6 +386,7 @@ export function VideoInput({
     };
 
     detections.forEach((detection) => {
+      console.log('Drawing detection:', detection);
       const [x, y, width, height] = detection.bbox;
       const scaledX = x * scaleX;
       const scaledY = y * scaleY;
