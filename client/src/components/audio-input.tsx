@@ -218,8 +218,14 @@ export function AudioInput({
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const audioHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       
-      // Convert to base64 for transmission
-      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
+      // Convert to base64 for transmission (use chunking to avoid stack overflow)
+      let binaryString = '';
+      const chunkSize = 65535;
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.subarray(i, i + chunkSize);
+        binaryString += String.fromCharCode(...chunk);
+      }
+      const base64Audio = btoa(binaryString);
       
       audioContext.close();
       
