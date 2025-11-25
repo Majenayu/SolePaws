@@ -114,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timestamp: new Date().toISOString(),
             dominantEmotion: trainingSample.emotion as any,
             emotionScores: emotionScores as any,
-            audioFeatures: { pitch: 0, frequency: 0, amplitude: 0, duration: 0, energy: 0, zcr: 0 },
+            audioFeatures: { pitch: 0, frequency: 0, amplitude: 0, duration: 0 },
           };
           
           await storage.saveAnalysis(analysis);

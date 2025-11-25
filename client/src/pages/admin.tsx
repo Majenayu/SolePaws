@@ -78,7 +78,7 @@ export default function Admin() {
       const audioHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       
       // Convert to base64 for transmission
-      const base64Audio = btoa(String.fromCharCode(...audioBytes));
+      const base64Audio = btoa(String.fromCharCode(...Array.from(audioBytes)));
 
       const res = await fetch("/api/training-samples", {
         method: "POST",
