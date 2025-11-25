@@ -8,7 +8,7 @@ export interface IStorage {
   getAnalysisById(id: string): Promise<AudioAnalysis | undefined>;
   saveTrainingSample(sample: TrainingAudioSample): Promise<TrainingAudioSample>;
   getTrainingSamples(): Promise<TrainingAudioSample[]>;
-  findMatchingTrainingSample(audioHash: string, threshold: number): Promise<TrainingAudioSample | undefined>;
+  findMatchingTrainingSample(fileName: string): Promise<TrainingAudioSample | undefined>;
   deleteTrainingSample(id: string): Promise<boolean>;
 }
 
@@ -65,7 +65,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async saveTrainingSample(sample: TrainingAudioSample): Promise<TrainingAudioSample> {
-    this.trainingSamples.set(sample.audioHash, sample);
+    this.trainingSamples.set(sample.fileName, sample);
     return sample;
   }
 
@@ -77,11 +77,11 @@ export class DatabaseStorage implements IStorage {
     return samples;
   }
 
-  async findMatchingTrainingSample(audioHash: string, threshold: number = 0.95): Promise<TrainingAudioSample | undefined> {
+  async findMatchingTrainingSample(fileName: string): Promise<TrainingAudioSample | undefined> {
     let result: TrainingAudioSample | undefined;
     this.trainingSamples.forEach((sample) => {
-      // Exact match or very close match
-      if (sample.audioHash === audioHash) {
+      // Match by filename
+      if (sample.fileName === fileName) {
         result = sample;
       }
     });
@@ -90,9 +90,9 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTrainingSample(id: string): Promise<boolean> {
     let found = false;
-    this.trainingSamples.forEach((sample, hash) => {
+    this.trainingSamples.forEach((sample, fileName) => {
       if (sample.id === id) {
-        this.trainingSamples.delete(hash);
+        this.trainingSamples.delete(fileName);
         found = true;
       }
     });

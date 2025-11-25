@@ -211,32 +211,14 @@ export function AudioInput({
         int16Array[i] = Math.max(-32768, Math.min(32767, channelData[i] * 32768));
       }
       
-      const uint8Array = new Uint8Array(int16Array.buffer);
-      
-      // Hash the raw audio bytes with SHA-256 for matching training data
-      const hashBuffer = await crypto.subtle.digest('SHA-256', uint8Array);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const audioHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      // Convert to base64 for transmission (use chunking to avoid stack overflow)
-      let binaryString = '';
-      const chunkSize = 65535;
-      for (let i = 0; i < uint8Array.length; i += chunkSize) {
-        const chunk = uint8Array.subarray(i, i + chunkSize);
-        binaryString += String.fromCharCode(...chunk);
-      }
-      const base64Audio = btoa(binaryString);
-      
       audioContext.close();
       
       const res = await apiRequest(
         'POST',
         '/api/analyze',
         {
-          audioData: base64Audio,
           sampleRate,
-          fileName: fileName || 'recording.wav',
-          audioHash
+          fileName: fileName || 'recording.wav'
         }
       );
       

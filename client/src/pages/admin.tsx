@@ -68,33 +68,13 @@ export default function Admin() {
 
     setIsUploading(true);
     try {
-      // Read file as ArrayBuffer to get raw bytes
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const audioBytes = new Uint8Array(arrayBuffer);
-      
-      // Hash the raw audio bytes with SHA-256
-      const hashBuffer = await crypto.subtle.digest('SHA-256', audioBytes);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const audioHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      // Convert to base64 for transmission (use chunking to avoid stack overflow)
-      let binaryString = '';
-      const chunkSize = 65535;
-      for (let i = 0; i < audioBytes.length; i += chunkSize) {
-        const chunk = audioBytes.subarray(i, i + chunkSize);
-        binaryString += String.fromCharCode(...chunk);
-      }
-      const base64Audio = btoa(binaryString);
-
       const res = await fetch("/api/training-samples", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           animal: selectedAnimal,
           emotion: selectedEmotion,
-          audioData: base64Audio,
           fileName: selectedFile.name,
-          audioHash,
         }),
       });
 

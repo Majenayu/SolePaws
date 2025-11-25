@@ -90,9 +90,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // HARDCODED mode: Only recognize pre-trained samples via exact hash match
-      if (validatedData.audioHash) {
-        const trainingSample = await storage.findMatchingTrainingSample(validatedData.audioHash, 0.95);
+      // HARDCODED mode: Only recognize pre-trained samples via exact filename match
+      if (validatedData.fileName) {
+        const trainingSample = await storage.findMatchingTrainingSample(validatedData.fileName);
         if (trainingSample) {
           console.log(`Found exact training sample match: ${trainingSample.fileName} (${trainingSample.animal} - ${trainingSample.emotion})`);
           const emotionScores: Record<string, number> = {
@@ -128,10 +128,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // No hash provided - reject
+      // No filename provided - reject
       return res.status(400).json({ 
         error: 'This system only recognizes pre-trained audio samples. Please ensure your audio has been uploaded in Admin Panel first.',
-        code: 'NO_HASH_PROVIDED'
+        code: 'NO_FILENAME_PROVIDED'
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -253,28 +253,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/training-samples', async (req, res) => {
     try {
-      const { animal, emotion, audioData, fileName, audioHash } = req.body;
-      
-      // Use provided hash if available, otherwise create one from audioData
-      let hash = audioHash;
-      if (!hash && audioData) {
-        hash = crypto
-          .createHash('sha256')
-          .update(audioData)
-          .digest('hex');
-      }
+      const { animal, emotion, fileName } = req.body;
 
       const sample: TrainingAudioSample = {
         id: randomUUID(),
         animal,
         emotion,
-        audioHash: hash || 'unknown',
+        audioHash: '', // Not used in filename-based matching
         fileName,
         createdAt: new Date().toISOString(),
       };
 
       const saved = await storage.saveTrainingSample(sample);
-      console.log(`Training sample saved: ${sample.fileName} (${sample.animal} - ${sample.emotion}), hash: ${sample.audioHash}`);
+      console.log(`Training sample saved: ${sample.fileName} (${sample.animal} - ${sample.emotion})`);
       res.json(saved);
     } catch (error) {
       console.error('Failed to save training sample:', error);
