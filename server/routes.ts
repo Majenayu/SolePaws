@@ -90,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Use provided audioHash if available (from client-side hash)
+      // HARDCODED mode: Only recognize pre-trained samples via exact hash match
       if (validatedData.audioHash) {
         const trainingSample = await storage.findMatchingTrainingSample(validatedData.audioHash, 0.95);
         if (trainingSample) {
@@ -119,19 +119,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           await storage.saveAnalysis(analysis);
           return res.json(analysis);
+        } else {
+          // Audio not found in training data - reject it
+          return res.status(404).json({ 
+            error: 'Audio not recognized. This sample has not been added to the training model. Please train a sample first in the Admin Panel.',
+            code: 'NOT_IN_TRAINING_DATA'
+          });
         }
       }
       
-      const analysis = await audioAnalyzer.analyze(
-        validatedData.animal || null, 
-        audioBuffer,
-        validatedData.sampleRate,
-        storage
-      );
-      
-      await storage.saveAnalysis(analysis);
-      
-      res.json(analysis);
+      // No hash provided - reject
+      return res.status(400).json({ 
+        error: 'This system only recognizes pre-trained audio samples. Please ensure your audio has been uploaded in Admin Panel first.',
+        code: 'NO_HASH_PROVIDED'
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
