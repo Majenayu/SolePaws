@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { audioAnalyzer } from "./audio-analyzer";
-import { analyzeAudioSchema } from "@shared/schema";
+import { analyzeAudioSchema, trainingSampleSchema, type TrainingAudioSample } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";
@@ -10,6 +10,8 @@ import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
+import { randomUUID } from "crypto";
+import crypto from "crypto";
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
@@ -200,6 +202,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to fetch analysis:', error);
       res.status(500).json({ error: 'Failed to fetch analysis' });
+    }
+  });
+
+  // Admin training routes
+  app.get('/api/training-samples', async (_req, res) => {
+    try {
+      const samples = await storage.getTrainingSamples();
+      res.json(samples);
+    } catch (error) {
+      console.error('Failed to fetch training samples:', error);
+      res.status(500).json({ error: 'Failed to fetch training samples' });
+    }
+  });
+
+  app.post('/api/training-samples', async (req, res) => {
+    try {
+      const validated = trainingSampleSchema.parse(req.body);
+      
+      const hash = crypto
+        .createHash('md5')
+        .update(validated.audioData)
+        .digest('hex');
+
+      const sample: TrainingAudioSample = {
+        id: randomUUID(),
+        animal: validated.animal,
+        emotion: validated.emotion,
+        audioHash: hash,
+        fileName: validated.fileName,
+        createdAt: new Date().toISOString(),
+      };
+
+      const saved = await storage.saveTrainingSample(sample);
+      console.log(`Training sample saved: ${sample.fileName} (${sample.animal} - ${sample.emotion})`);
+      res.json(saved);
+    } catch (error) {
+      console.error('Failed to save training sample:', error);
+      res.status(500).json({ error: 'Failed to save training sample' });
+    }
+  });
+
+  app.delete('/api/training-samples/:id', async (_req, res) => {
+    try {
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to delete training sample:', error);
+      res.status(500).json({ error: 'Failed to delete training sample' });
     }
   });
 
