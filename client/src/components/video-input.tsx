@@ -210,11 +210,11 @@ export function VideoInput({
       return;
     }
 
-    await analyzeVideo(file);
+    await analyzeVideo(file, file.name);
     event.target.value = "";
   };
 
-  const analyzeVideo = async (videoBlob: Blob) => {
+  const analyzeVideo = async (videoBlob: Blob, fileName?: string) => {
     setIsProcessing(true);
     onAnalyzing(true);
 
@@ -293,22 +293,19 @@ export function VideoInput({
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Send video to backend for audio extraction and emotion analysis
-      const formData = new FormData();
-      formData.append("video", videoBlob);
-      formData.append("animal", detectedAnimal || "unknown");
+      // Use hardcoded filename-based matching (same as audio)
+      const { apiRequest } = await import("@/lib/queryClient");
+      
+      const res = await apiRequest(
+        'POST',
+        '/api/analyze',
+        {
+          sampleRate: 44100,
+          fileName: fileName || 'video.mp4'
+        }
+      );
 
-      const response = await fetch("/api/analyze-video", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || errorData.details || `Server error: ${response.status}`);
-      }
-
-      const analysis: any = await response.json();
+      const analysis: any = await res.json();
       
       // Auto-detect animal if not already set
       if (analysis.animal) {
