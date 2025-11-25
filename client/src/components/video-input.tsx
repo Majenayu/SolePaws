@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Video, Upload, Square, Loader2, Zap } from "lucide-react";
 import { AnimalType, AudioAnalysis } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { PoseDetector } from "@/lib/pose-detector";
+import { AnimalDetector } from "@/lib/animal-detector";
 
 interface VideoInputProps {
   selectedAnimal: AnimalType | null;
@@ -35,20 +35,24 @@ export function VideoInput({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const poseDetectorRef = useRef<PoseDetector | null>(null);
+  const animalDetectorRef = useRef<AnimalDetector | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const { toast } = useToast();
 
   useEffect(() => {
-    const initPoseDetector = async () => {
+    const initDetectors = async () => {
       try {
         poseDetectorRef.current = new PoseDetector();
         await poseDetectorRef.current.initialize();
+        
+        animalDetectorRef.current = new AnimalDetector();
+        await animalDetectorRef.current.initialize();
       } catch (error) {
-        console.error("Failed to initialize pose detector:", error);
+        console.error("Failed to initialize detectors:", error);
       }
     };
-    initPoseDetector();
+    initDetectors();
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -73,37 +77,60 @@ export function VideoInput({
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
 
-      const detectPoses = async () => {
-        if (!videoRef.current || !canvasRef.current || !poseDetectorRef.current) return;
+      const detectAnimalsAndPoses = async () => {
+        if (!videoRef.current || !canvasRef.current) return;
 
         try {
-          const poses = await poseDetectorRef.current.estimatePoses(videoRef.current);
-
-          if (poses && poses.length > 0) {
-            const pose = poses[0];
-            setPoseData(pose);
-
-            // Draw skeleton on canvas
-            const ctx = canvasRef.current.getContext("2d");
-            if (ctx) {
-              ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-              ctx.drawImage(videoRef.current, 0, 0);
-              drawSkeleton(ctx, pose);
+          // Detect animal in video
+          if (animalDetectorRef.current) {
+            const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
+            if (detection && detection.confidence > 0.5) {
+              setDetectedAnimal(detection.animal);
+              if (onAnimalDetected) onAnimalDetected(detection.animal as AnimalType);
             }
+          }
 
-            // Simple animal detection from pose confidence
-            const confidence = pose.score || 0.5;
-            const animalType = confidence > 0.6 ? "dog" : "cat";
-            setDetectedAnimal(animalType);
-            if (onAnimalDetected) onAnimalDetected(animalType as AnimalType);
+          // Detect skeleton poses
+          if (poseDetectorRef.current) {
+            const poses = await poseDetectorRef.current.estimatePoses(videoRef.current);
+
+            if (poses && poses.length > 0) {
+              const pose = poses[0];
+              setPoseData(pose);
+
+              const ctx = canvasRef.current.getContext("2d");
+              if (ctx) {
+                const rect = canvasRef.current.getBoundingClientRect();
+                canvasRef.current.width = rect.width;
+                canvasRef.current.height = rect.height;
+                
+                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                
+                const video = videoRef.current;
+                const scaleX = canvasRef.current.width / (video.videoWidth || 640);
+                const scaleY = canvasRef.current.height / (video.videoHeight || 480);
+
+                drawSkeletonScaled(ctx, pose, scaleX, scaleY);
+                
+                if (detectedAnimal) {
+                  ctx.fillStyle = "#00ff00";
+                  ctx.font = "bold 24px Arial";
+                  ctx.lineWidth = 2;
+                  ctx.strokeStyle = "#000000";
+                  ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
+                  ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
+                }
+              }
+            }
           }
         } catch (error) {
-          console.error("Pose detection error:", error);
+          console.error("Detection error:", error);
         }
 
-        animationFrameRef.current = requestAnimationFrame(detectPoses);
+        animationFrameRef.current = requestAnimationFrame(detectAnimalsAndPoses);
       };
 
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -127,7 +154,7 @@ export function VideoInput({
       setIsRecording(true);
       setRecordingTime(0);
 
-      detectPoses();
+      detectAnimalsAndPoses();
 
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
@@ -176,90 +203,85 @@ export function VideoInput({
     onAnalyzing(true);
 
     try {
-      // Display and play the video
       const videoUrl = URL.createObjectURL(videoBlob);
       if (videoRef.current) {
         videoRef.current.src = videoUrl;
-        // Wait for video to be loadable before playing
         videoRef.current.oncanplay = () => {
           videoRef.current?.play().catch(e => console.error('Video playback error:', e));
         };
       }
 
-      // Start skeleton detection while video plays
-      if (videoRef.current && canvasRef.current && poseDetectorRef.current) {
-        const detectPoses = async () => {
+      // Start real-time detection while video plays
+      if (videoRef.current && canvasRef.current) {
+        const detectLoop = async () => {
           try {
             if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) {
-              // Stop detection when video finishes
               if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
               }
               return;
             }
 
-            const poses = await poseDetectorRef.current!.estimatePoses(videoRef.current);
-            
-            if (poses && poses.length > 0 && canvasRef.current && videoRef.current) {
-              const pose = poses[0];
-              setPoseData(pose);
+            // Detect animal
+            if (animalDetectorRef.current) {
+              const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
+              if (detection && detection.confidence > 0.5) {
+                setDetectedAnimal(detection.animal);
+                if (onAnimalDetected) onAnimalDetected(detection.animal as AnimalType);
+              }
+            }
 
-              // Get canvas and video dimensions
-              const canvas = canvasRef.current;
-              const video = videoRef.current;
+            // Detect poses
+            if (poseDetectorRef.current && canvasRef.current) {
+              const poses = await poseDetectorRef.current.estimatePoses(videoRef.current);
               
-              // Set canvas size to match display size
-              const rect = canvas.getBoundingClientRect();
-              canvas.width = rect.width;
-              canvas.height = rect.height;
+              if (poses && poses.length > 0 && videoRef.current) {
+                const pose = poses[0];
+                setPoseData(pose);
 
-              const ctx = canvas.getContext("2d", { willReadFrequently: true });
-              if (ctx) {
-                // Clear and draw skeleton overlay
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const canvas = canvasRef.current;
+                const video = videoRef.current;
                 
-                // Calculate scaling factors
-                const scaleX = canvas.width / (video.videoWidth || 640);
-                const scaleY = canvas.height / (video.videoHeight || 480);
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
 
-                // Draw skeleton with scaled coordinates
-                drawSkeletonScaled(ctx, pose, scaleX, scaleY);
-                
-                // Draw animal name if detected
-                if (detectedAnimal) {
-                  ctx.fillStyle = "#00ff00";
-                  ctx.font = "bold 24px Arial";
-                  ctx.lineWidth = 2;
-                  ctx.strokeStyle = "#000000";
-                  ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
-                  ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
+                const ctx = canvas.getContext("2d", { willReadFrequently: true });
+                if (ctx) {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  
+                  const scaleX = canvas.width / (video.videoWidth || 640);
+                  const scaleY = canvas.height / (video.videoHeight || 480);
+
+                  drawSkeletonScaled(ctx, pose, scaleX, scaleY);
+                  
+                  if (detectedAnimal) {
+                    ctx.fillStyle = "#00ff00";
+                    ctx.font = "bold 24px Arial";
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "#000000";
+                    ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
+                    ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
+                  }
                 }
               }
-
-              // Auto-detect animal from pose
-              const confidence = pose.score || 0.5;
-              const animalType = confidence > 0.6 ? "dog" : "cat";
-              setDetectedAnimal(animalType);
-              if (onAnimalDetected) onAnimalDetected(animalType as AnimalType);
             }
           } catch (error) {
-            console.error("Pose detection error:", error);
+            console.error("Detection error:", error);
           }
 
-          animationFrameRef.current = requestAnimationFrame(detectPoses);
+          animationFrameRef.current = requestAnimationFrame(detectLoop);
         };
 
-        detectPoses();
+        detectLoop();
       }
 
-      // Wait a bit for video to load, then analyze
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      // Send video to backend for audio extraction and emotion analysis
       const formData = new FormData();
       formData.append("video", videoBlob);
-      formData.append("animal", selectedAnimal || "unknown");
-      formData.append("detectedAnimal", detectedAnimal || "unknown");
-      formData.append("poseData", JSON.stringify(poseData || {}));
+      formData.append("animal", selectedAnimal || detectedAnimal || "unknown");
 
       const analysis: any = await fetch("/api/analyze-video", {
         method: "POST",
@@ -273,7 +295,6 @@ export function VideoInput({
         description: `Detected: ${analysis.animal} - Emotion: ${analysis.dominantEmotion}`,
       });
 
-      // Cleanup
       if (videoRef.current) {
         videoRef.current.pause();
       }
@@ -294,43 +315,6 @@ export function VideoInput({
     }
   };
 
-  const drawSkeleton = (ctx: CanvasRenderingContext2D, pose: any) => {
-    const keypoints = pose.keypoints || [];
-
-    // Draw keypoints
-    keypoints.forEach((point: any) => {
-      if (point.score > 0.5) {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = "#00ff00";
-        ctx.fill();
-      }
-    });
-
-    // Draw skeleton connections
-    const adjacentKeyPoints = [
-      [0, 1], [0, 2], [1, 3], [2, 4], [0, 5], [0, 6], [5, 7], [7, 9],
-      [6, 8], [8, 10], [5, 6], [5, 11], [6, 12], [11, 12], [11, 13], [13, 15],
-      [12, 14], [14, 16],
-    ];
-
-    adjacentKeyPoints.forEach(([start, end]) => {
-      if (keypoints[start] && keypoints[end]) {
-        const startPoint = keypoints[start];
-        const endPoint = keypoints[end];
-
-        if (startPoint.score > 0.5 && endPoint.score > 0.5) {
-          ctx.beginPath();
-          ctx.moveTo(startPoint.x, startPoint.y);
-          ctx.lineTo(endPoint.x, endPoint.y);
-          ctx.strokeStyle = "#00ff00";
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-      }
-    });
-  };
-
   const drawSkeletonScaled = (ctx: CanvasRenderingContext2D, pose: any, scaleX: number, scaleY: number) => {
     const keypoints = pose.keypoints || [];
 
@@ -345,21 +329,15 @@ export function VideoInput({
         ctx.fillStyle = "#00ff00";
         ctx.fill();
         
-        // Add outline for visibility
         ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
     });
 
-    // Draw skeleton connections with thicker lines
-    const adjacentKeyPoints = [
-      [0, 1], [0, 2], [1, 3], [2, 4], [0, 5], [0, 6], [5, 7], [7, 9],
-      [6, 8], [8, 10], [5, 6], [5, 11], [6, 12], [11, 12], [11, 13], [13, 15],
-      [12, 14], [14, 16],
-    ];
-
-    adjacentKeyPoints.forEach(([start, end]) => {
+    // Draw skeleton connections
+    const connections = pose.skeleton || [];
+    connections.forEach(([start, end]: [number, number]) => {
       if (keypoints[start] && keypoints[end]) {
         const startPoint = keypoints[start];
         const endPoint = keypoints[end];
@@ -386,7 +364,7 @@ export function VideoInput({
   return (
     <Card className="p-6" data-testid="card-video-input">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold text-foreground" data-testid="text-video-title">
             Video Analysis
           </h2>
@@ -410,17 +388,16 @@ export function VideoInput({
             />
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full"
-              style={{ imageRendering: "pixelated" }}
+              className="absolute inset-0 w-full h-full pointer-events-none"
               data-testid="canvas-skeleton"
             />
           </div>
           <div className="text-xs text-muted-foreground px-1">
-            Green skeleton overlay shows real-time pose detection while video plays
+            Real-time: Green skeleton shows pose detection, animal name shows species identification
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {!isRecording ? (
             <>
               <Button
@@ -472,9 +449,9 @@ export function VideoInput({
           </div>
         )}
 
-        <div className="text-xs text-muted-foreground p-3 bg-muted rounded" data-testid="text-info">
+        <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md" data-testid="text-info">
           <Zap className="w-3 h-3 inline mr-1" />
-          Real-time skeleton detection shows animal posture and behavior analysis
+          Real-time detection: Skeleton poses + Animal identification. Emotion analysis based on audio from video.
         </div>
       </div>
     </Card>

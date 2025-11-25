@@ -1,108 +1,95 @@
-// Real-time pose detection with realistic skeleton formation
+import { PoseLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
+
 export class PoseDetector {
+  private poseLandmarker: PoseLandmarker | null = null;
   private initialized = false;
-  private prevKeypoints: any[] = [];
 
   async initialize() {
     try {
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      );
+      
+      this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 2,
+        minPoseDetectionConfidence: 0.3,
+        minPosePresenceConfidence: 0.3,
+        minTrackingConfidence: 0.3
+      });
+      
       this.initialized = true;
-      console.log("Pose detector initialized");
+      console.log("MediaPipe Pose Landmarker initialized successfully");
     } catch (error) {
-      console.error("Failed to initialize pose detector:", error);
-      this.initialized = true;
+      console.error("Failed to initialize MediaPipe pose detector:", error);
+      this.initialized = false;
     }
   }
 
   async estimatePoses(videoElement: HTMLVideoElement): Promise<any[]> {
-    if (!this.initialized) {
+    if (!this.initialized || !this.poseLandmarker) {
       return [];
     }
 
     try {
-      // Generate realistic skeleton based on video frame analysis
-      const poses = this.analyzeVideoFrame(videoElement);
+      const startTimeMs = performance.now();
+      const results = this.poseLandmarker.detectForVideo(videoElement, startTimeMs);
+      
+      if (!results || !results.landmarks || results.landmarks.length === 0) {
+        return [];
+      }
+
+      // Convert MediaPipe landmarks to our format
+      const poses = results.landmarks.map((landmarks, idx) => {
+        const keypoints = landmarks.map((landmark, keypointIdx) => ({
+          x: landmark.x * (videoElement.videoWidth || 640),
+          y: landmark.y * (videoElement.videoHeight || 480),
+          z: landmark.z || 0,
+          score: landmark.visibility || 0.5,
+          name: this.getKeypointName(keypointIdx)
+        }));
+
+        return {
+          score: results.worldLandmarks?.[idx]?.[0]?.visibility || 0.7,
+          keypoints,
+          skeleton: this.getSkeleton()
+        };
+      });
+
       return poses;
     } catch (error) {
       console.error("Pose detection error:", error);
-      return this.generateRealisticPose();
+      return [];
     }
   }
 
-  private analyzeVideoFrame(videoElement: HTMLVideoElement): any[] {
-    // Analyze video for body position and generate realistic skeleton
-    const width = videoElement.videoWidth || 640;
-    const height = videoElement.videoHeight || 480;
-    
-    // Generate skeleton with realistic dog/cat posture
-    const keypoints = this.generateRealisticKeypoints(width, height);
-    
-    return [{
-      score: 0.75,
-      keypoints,
-      skeleton: this.getSkeleton(),
-    }];
-  }
-
-  private generateRealisticKeypoints(width: number, height: number): any[] {
-    // Create realistic animal skeleton centered in frame
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const scale = Math.min(width, height) / 500;
-
-    // MoveNet 17-keypoint format with realistic positions for animals
-    const basePoints = [
-      [centerX, centerY - 80 * scale],           // 0: nose
-      [centerX - 20 * scale, centerY - 90 * scale],  // 1: left eye
-      [centerX + 20 * scale, centerY - 90 * scale],  // 2: right eye
-      [centerX - 30 * scale, centerY - 100 * scale], // 3: left ear
-      [centerX + 30 * scale, centerY - 100 * scale], // 4: right ear
-      [centerX - 60 * scale, centerY + 20 * scale],  // 5: left shoulder
-      [centerX + 60 * scale, centerY + 20 * scale],  // 6: right shoulder
-      [centerX - 80 * scale, centerY + 60 * scale],  // 7: left elbow
-      [centerX + 80 * scale, centerY + 60 * scale],  // 8: right elbow
-      [centerX - 90 * scale, centerY + 100 * scale], // 9: left wrist
-      [centerX + 90 * scale, centerY + 100 * scale], // 10: right wrist
-      [centerX - 50 * scale, centerY + 80 * scale],  // 11: left hip
-      [centerX + 50 * scale, centerY + 80 * scale],  // 12: right hip
-      [centerX - 60 * scale, centerY + 140 * scale], // 13: left knee
-      [centerX + 60 * scale, centerY + 140 * scale], // 14: right knee
-      [centerX - 60 * scale, centerY + 180 * scale], // 15: left ankle
-      [centerX + 60 * scale, centerY + 180 * scale], // 16: right ankle
-    ];
-
-    // Add slight variation for natural movement
-    const keypoints = basePoints.map(([x, y], idx) => ({
-      x: x + (Math.random() - 0.5) * 10 * scale,
-      y: y + (Math.random() - 0.5) * 10 * scale,
-      score: 0.7 + Math.random() * 0.3,
-      name: this.getKeypointName(idx),
-    }));
-
-    return keypoints;
-  }
-
-  private generateRealisticPose(): any[] {
-    return [{
-      score: 0.7,
-      keypoints: this.generateRealisticKeypoints(640, 480),
-      skeleton: this.getSkeleton(),
-    }];
-  }
-
   private getSkeleton(): Array<[number, number]> {
+    // MediaPipe Pose connections for skeleton visualization
     return [
-      [0, 1], [0, 2], [1, 3], [2, 4], [0, 5], [0, 6], [5, 7], [7, 9],
-      [6, 8], [8, 10], [5, 6], [5, 11], [6, 12], [11, 12], [11, 13],
-      [13, 15], [12, 14], [14, 16],
+      // Face
+      [0, 1], [1, 2], [2, 3], [3, 7], [0, 4], [4, 5], [5, 6], [6, 8],
+      // Torso
+      [9, 10], [11, 12], [11, 13], [13, 15], [15, 17], [15, 19], [15, 21],
+      [12, 14], [14, 16], [16, 18], [16, 20], [16, 22],
+      // Body
+      [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [27, 29], [27, 31],
+      [24, 26], [26, 28], [28, 30], [28, 32]
     ];
   }
 
   private getKeypointName(index: number): string {
     const names = [
-      "nose", "leftEye", "rightEye", "leftEar", "rightEar",
-      "leftShoulder", "rightShoulder", "leftElbow", "rightElbow",
-      "leftWrist", "rightWrist", "leftHip", "rightHip",
-      "leftKnee", "rightKnee", "leftAnkle", "rightAnkle",
+      "nose", "leftEyeInner", "leftEye", "leftEyeOuter", "rightEyeInner",
+      "rightEye", "rightEyeOuter", "leftEar", "rightEar", "mouthLeft",
+      "mouthRight", "leftShoulder", "rightShoulder", "leftElbow", "rightElbow",
+      "leftWrist", "rightWrist", "leftPinky", "rightPinky", "leftIndex",
+      "rightIndex", "leftThumb", "rightThumb", "leftHip", "rightHip",
+      "leftKnee", "rightKnee", "leftAnkle", "rightAnkle", "leftHeel",
+      "rightHeel", "leftFootIndex", "rightFootIndex"
     ];
     return names[index] || `keypoint${index}`;
   }
@@ -116,13 +103,13 @@ export class PoseDetector {
       stability: 0,
     };
 
-    if (keypoints.length < 5) return features;
+    if (keypoints.length < 23) return features;
 
     const nose = keypoints[0];
-    const leftShoulder = keypoints[5];
-    const rightShoulder = keypoints[6];
-    const leftHip = keypoints[11];
-    const rightHip = keypoints[12];
+    const leftShoulder = keypoints[11];
+    const rightShoulder = keypoints[12];
+    const leftHip = keypoints[23];
+    const rightHip = keypoints[24];
 
     if (leftHip && nose) {
       features.bodyHeight = Math.abs(nose.y - leftHip.y);
