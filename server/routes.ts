@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { audioAnalyzer } from "./audio-analyzer";
-import { analyzeAudioSchema, trainingSampleSchema, type TrainingAudioSample } from "@shared/schema";
+import { analyzeAudioSchema, trainingSampleSchema, type TrainingAudioSample, type AudioAnalysis } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";

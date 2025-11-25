@@ -58,6 +58,7 @@ export const analyzeAudioSchema = z.object({
   audioData: z.string(),
   sampleRate: z.number(),
   fileName: z.string().optional(),
+  audioHash: z.string().optional(),
 });
 
 export type AnalyzeAudioRequest = z.infer<typeof analyzeAudioSchema>;
