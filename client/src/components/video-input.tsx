@@ -22,6 +22,7 @@ export function VideoInput({
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [detectedAnimal, setDetectedAnimal] = useState<string | null>(null);
+  const [animalDetections, setAnimalDetections] = useState<any[]>([]);
   const [poseData, setPoseData] = useState<any>(null);
   const [detectorsReady, setDetectorsReady] = useState(false);
 
@@ -106,6 +107,11 @@ export function VideoInput({
             const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
             if (detection && detection.confidence > 0.5) {
               setDetectedAnimal(detection.animal);
+              setAnimalDetections(detection.detections || []);
+            } else {
+              // Clear detections when no animals are found
+              setDetectedAnimal(null);
+              setAnimalDetections([]);
             }
           }
 
@@ -131,13 +137,9 @@ export function VideoInput({
 
                 drawSkeletonScaled(ctx, pose, scaleX, scaleY);
                 
-                if (detectedAnimal) {
-                  ctx.fillStyle = "#00ff00";
-                  ctx.font = "bold 24px Arial";
-                  ctx.lineWidth = 2;
-                  ctx.strokeStyle = "#000000";
-                  ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
-                  ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
+                // Draw bounding boxes for all detected animals
+                if (animalDetections.length > 0) {
+                  drawAnimalBoundingBoxes(ctx, animalDetections, scaleX, scaleY);
                 }
               }
             }
@@ -251,6 +253,11 @@ export function VideoInput({
               const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
               if (detection && detection.confidence > 0.5) {
                 setDetectedAnimal(detection.animal);
+                setAnimalDetections(detection.detections || []);
+              } else {
+                // Clear detections when no animals are found
+                setDetectedAnimal(null);
+                setAnimalDetections([]);
               }
             }
 
@@ -286,13 +293,9 @@ export function VideoInput({
                   ctx.globalAlpha = 1.0;
                 }
                 
-                if (detectedAnimal) {
-                  ctx.fillStyle = "#00ff00";
-                  ctx.font = "bold 24px Arial";
-                  ctx.lineWidth = 3;
-                  ctx.strokeStyle = "#000000";
-                  ctx.strokeText(detectedAnimal.toUpperCase(), 20, 40);
-                  ctx.fillText(detectedAnimal.toUpperCase(), 20, 40);
+                // Draw bounding boxes for all detected animals
+                if (animalDetections.length > 0) {
+                  drawAnimalBoundingBoxes(ctx, animalDetections, scaleX, scaleY);
                 }
               }
             }
@@ -353,6 +356,66 @@ export function VideoInput({
       setIsProcessing(false);
       onAnalyzing(false);
     }
+  };
+
+  const drawAnimalBoundingBoxes = (
+    ctx: CanvasRenderingContext2D,
+    detections: any[],
+    scaleX: number,
+    scaleY: number
+  ) => {
+    // Color palette for different animal types
+    const animalColors: Record<string, string> = {
+      dog: "#FF4444",      // Red
+      cat: "#00BFFF",      // Cyan
+      bird: "#FFFF00",     // Yellow
+      chicken: "#FFFF00",  // Yellow
+      horse: "#FF8C00",    // Orange
+      sheep: "#90EE90",    // Light green
+      cow: "#FFA500",      // Orange
+      elephant: "#FF4444", // Red
+      bear: "#8B4513",     // Brown
+      zebra: "#FFD700",    // Gold
+      giraffe: "#FFFF00",  // Yellow
+    };
+
+    detections.forEach((detection) => {
+      const [x, y, width, height] = detection.bbox;
+      const scaledX = x * scaleX;
+      const scaledY = y * scaleY;
+      const scaledWidth = width * scaleX;
+      const scaledHeight = height * scaleY;
+      
+      const animalClass = detection.class.toLowerCase();
+      const confidence = Math.round(detection.score * 100);
+      const color = animalColors[animalClass] || "#00ff00"; // Default to green
+
+      // Draw bounding box
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+
+      // Draw label background
+      const label = `${detection.class}: ${confidence}%`;
+      ctx.font = "bold 16px Arial";
+      const textMetrics = ctx.measureText(label);
+      const textWidth = textMetrics.width;
+      const textHeight = 20;
+      const padding = 4;
+
+      // Background rectangle for label
+      ctx.fillStyle = color;
+      ctx.fillRect(
+        scaledX,
+        scaledY - textHeight - padding * 2,
+        textWidth + padding * 2,
+        textHeight + padding * 2
+      );
+
+      // Draw label text
+      ctx.fillStyle = "#000000"; // Black text for contrast
+      ctx.fillText(label, scaledX + padding, scaledY - padding - 2);
+    });
   };
 
   const drawSkeletonScaled = (ctx: CanvasRenderingContext2D, pose: any, scaleX: number, scaleY: number) => {
@@ -484,7 +547,7 @@ export function VideoInput({
             />
           </div>
           <div className="text-xs text-muted-foreground px-1">
-            Real-time: Green skeleton shows pose detection, animal name shows species identification
+            Real-time: Green skeleton shows pose detection, colored boxes show detected animals with confidence scores
           </div>
         </div>
 
@@ -542,7 +605,7 @@ export function VideoInput({
 
         <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md" data-testid="text-info">
           <Zap className="w-3 h-3 inline mr-1" />
-          Real-time detection: Skeleton poses + Animal identification. Emotion analysis based on audio from video.
+          Real-time detection: Skeleton poses + Animal bounding boxes with confidence scores. Emotion analysis based on audio from video.
         </div>
       </div>
     </Card>
