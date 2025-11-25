@@ -27,6 +27,7 @@ export function VideoInput({
   const [recordingTime, setRecordingTime] = useState(0);
   const [detectedAnimal, setDetectedAnimal] = useState<string | null>(null);
   const [poseData, setPoseData] = useState<any>(null);
+  const [detectorsReady, setDetectorsReady] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,13 +44,24 @@ export function VideoInput({
   useEffect(() => {
     const initDetectors = async () => {
       try {
+        console.log("Initializing pose detector...");
         poseDetectorRef.current = new PoseDetector();
         await poseDetectorRef.current.initialize();
+        console.log("Pose detector ready");
         
+        console.log("Initializing animal detector...");
         animalDetectorRef.current = new AnimalDetector();
         await animalDetectorRef.current.initialize();
+        console.log("Animal detector ready");
+        
+        setDetectorsReady(true);
       } catch (error) {
         console.error("Failed to initialize detectors:", error);
+        toast({
+          title: "Detector initialization failed",
+          description: "Some features may not work. Check console for details.",
+          variant: "destructive",
+        });
       }
     };
     initDetectors();
@@ -62,12 +74,21 @@ export function VideoInput({
   }, []);
 
   useEffect(() => {
-    if (sampleFile) {
+    if (sampleFile && detectorsReady) {
       analyzeVideo(sampleFile);
     }
-  }, [sampleFile]);
+  }, [sampleFile, detectorsReady]);
 
   const startRecording = async () => {
+    if (!detectorsReady) {
+      toast({
+        title: "Detectors not ready",
+        description: "Please wait for detectors to initialize...",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 } },
@@ -81,7 +102,7 @@ export function VideoInput({
       }
 
       const detectAnimalsAndPoses = async () => {
-        if (!videoRef.current || !canvasRef.current) return;
+        if (!videoRef.current || !canvasRef.current || !detectorsReady) return;
 
         try {
           // Detect animal in video
@@ -211,8 +232,8 @@ export function VideoInput({
         };
       }
 
-      // Start real-time detection while video plays
-      if (videoRef.current && canvasRef.current) {
+      // Start real-time detection while video plays (only if detectors are ready)
+      if (videoRef.current && canvasRef.current && detectorsReady) {
         const detectLoop = async () => {
           try {
             if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) {
@@ -223,7 +244,7 @@ export function VideoInput({
             }
 
             // Detect animal
-            if (animalDetectorRef.current) {
+            if (animalDetectorRef.current && detectorsReady) {
               const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
               if (detection && detection.confidence > 0.5) {
                 setDetectedAnimal(detection.animal);
@@ -232,7 +253,7 @@ export function VideoInput({
             }
 
             // Detect poses
-            if (poseDetectorRef.current && canvasRef.current) {
+            if (poseDetectorRef.current && canvasRef.current && detectorsReady) {
               const poses = await poseDetectorRef.current.estimatePoses(videoRef.current);
               
               if (poses && poses.length > 0 && videoRef.current) {
@@ -283,10 +304,17 @@ export function VideoInput({
       formData.append("video", videoBlob);
       formData.append("animal", selectedAnimal || detectedAnimal || "unknown");
 
-      const analysis: any = await fetch("/api/analyze-video", {
+      const response = await fetch("/api/analyze-video", {
         method: "POST",
         body: formData,
-      }).then(r => r.json());
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || errorData.details || `Server error: ${response.status}`);
+      }
+
+      const analysis: any = await response.json();
 
       onAnalysisComplete(analysis);
 
@@ -402,13 +430,13 @@ export function VideoInput({
             <>
               <Button
                 onClick={startRecording}
-                disabled={isProcessing}
+                disabled={isProcessing || !detectorsReady}
                 className="flex-1"
                 variant="default"
                 data-testid="button-start-recording"
               >
                 <Video className="w-4 h-4 mr-2" />
-                Start Recording
+                {detectorsReady ? "Start Recording" : "Loading Detectors..."}
               </Button>
               <Button
                 asChild
