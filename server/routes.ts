@@ -280,6 +280,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pet Chatbot endpoint using OpenRouter API
+  app.post('/api/chat', async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'API key not configured' });
+      }
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert pet behavior and emotion specialist. Answer questions about pet emotions, behaviors, body language, and well-being. Focus on dogs, cats, birds, and other common pets. Keep responses concise and practical.',
+            },
+            {
+              role: 'user',
+              content: message,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('OpenRouter API error:', error);
+        return res.status(response.status).json({ error: 'Failed to get chat response' });
+      }
+
+      const data = await response.json();
+      const chatResponse = data.choices?.[0]?.message?.content;
+
+      if (!chatResponse) {
+        return res.status(500).json({ error: 'No response from API' });
+      }
+
+      res.json({ response: chatResponse });
+    } catch (error) {
+      console.error('Chat endpoint error:', error);
+      res.status(500).json({ error: 'Failed to process chat message' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
