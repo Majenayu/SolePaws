@@ -119,3 +119,7 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Skeleton Detection While Playing**: Video samples show green skeleton keypoints and connections overlaid on the playing video, with animal species detected and displayed
 - **Emotion Detection During Playback**: Emotion analysis results shown in circular visualization as samples play through, with confidence scores for all 9 emotions
 - **Added Royalty-Free Demo Videos**: Downloaded 4 real animal videos from Pexels (barking dog, happy dog, playful cats, cat with toy) - no synthetic data
+- **Green Bounding Boxes for ALL Objects**: COCO-SSD model now detects and draws green bounding boxes around ALL detected objects (not just animals) with labels and confidence percentages
+- **Full Video Playback with Audio**: Videos now play until the end without interruption, with audio enabled
+- **Fixed React State Closure Issue**: Detection results are now drawn immediately each frame instead of relying on React state, ensuring real-time rendering of bounding boxes
+- **Memory Leak Prevention**: Object URLs are properly cleaned up when video ends to prevent memory accumulation
