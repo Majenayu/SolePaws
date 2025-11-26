@@ -16,61 +16,63 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
   };
 
   return (
-    <Card className="p-4 sm:p-6 h-fit">
-      <h2 className="text-lg sm:text-xl font-bold mb-4 text-foreground flex items-center gap-2" data-testid="text-results">
-        <TrendingUp className="w-5 h-5" />
+    <Card className="p-4 lg:p-6">
+      <h2 className="text-xl font-semibold mb-4 text-foreground" data-testid="text-results">
         Results
       </h2>
       
       {currentAnalysis ? (
-        <div className="space-y-4">
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-xl p-4 border border-green-200 dark:border-green-800">
-            <div className="text-xs font-semibold text-green-700 dark:text-green-400 mb-2 uppercase">Latest Reading</div>
+        <div className="space-y-6">
+          <div className="bg-muted/40 rounded-lg p-6 border border-border">
+            <div className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" />
+              Current Reading
+            </div>
             
             <div 
-              className="text-2xl sm:text-3xl font-bold text-foreground capitalize mb-2"
+              className="text-3xl font-bold text-foreground capitalize mb-3"
               data-testid="text-current-emotion"
             >
               {currentAnalysis.dominantEmotion}
             </div>
-            <div className="flex items-baseline gap-2 mb-3">
+            <div className="flex items-baseline gap-2 mb-4">
               <span 
-                className="text-3xl sm:text-4xl font-mono font-bold text-green-600 dark:text-green-400"
+                className="text-4xl font-mono font-bold text-primary"
                 data-testid="text-current-confidence"
               >
                 {Math.round(currentAnalysis.emotionScores[currentAnalysis.dominantEmotion] * 100)}%
               </span>
-              <span className="text-xs sm:text-sm text-green-700 dark:text-green-300">confidence</span>
+              <span className="text-sm text-muted-foreground">confidence</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-green-700 dark:text-green-300 mt-2" data-testid="text-current-timestamp">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2" data-testid="text-current-timestamp">
               <Clock className="w-3 h-3" />
               {formatTimestamp(currentAnalysis.timestamp)}
             </div>
           </div>
 
-          <div className="bg-muted/60 dark:bg-muted/30 rounded-lg p-3 border border-border">
-            <h3 className="text-xs sm:text-sm font-semibold mb-3 text-foreground uppercase">Audio Features</h3>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-background/50 dark:bg-background/30 rounded-md p-2">
-                <div className="text-muted-foreground text-xs mb-1">Pitch</div>
+          <div className="bg-card rounded-lg p-3 border border-border">
+            <h3 className="text-sm font-semibold mb-2 text-foreground">Audio Features</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div className="text-muted-foreground">Pitch</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-pitch">
                   {currentAnalysis.audioFeatures?.pitch != null ? `${currentAnalysis.audioFeatures.pitch.toFixed(1)} Hz` : "N/A"}
                 </div>
               </div>
-              <div className="bg-background/50 dark:bg-background/30 rounded-md p-2">
-                <div className="text-muted-foreground text-xs mb-1">Frequency</div>
+              <div>
+                <div className="text-muted-foreground">Frequency</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-frequency">
                   {currentAnalysis.audioFeatures?.frequency != null ? `${currentAnalysis.audioFeatures.frequency.toFixed(0)} Hz` : "N/A"}
                 </div>
               </div>
-              <div className="bg-background/50 dark:bg-background/30 rounded-md p-2">
-                <div className="text-muted-foreground text-xs mb-1">Amplitude</div>
+              <div>
+                <div className="text-muted-foreground">Amplitude</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-amplitude">
                   {currentAnalysis.audioFeatures?.amplitude != null ? `${(currentAnalysis.audioFeatures.amplitude * 100).toFixed(0)}%` : "N/A"}
                 </div>
               </div>
-              <div className="bg-background/50 dark:bg-background/30 rounded-md p-2">
-                <div className="text-muted-foreground text-xs mb-1">Duration</div>
+              <div>
+                <div className="text-muted-foreground">Duration</div>
                 <div className="font-mono font-semibold text-foreground" data-testid="text-duration">
                   {currentAnalysis.audioFeatures?.duration != null ? `${currentAnalysis.audioFeatures.duration.toFixed(1)}s` : "N/A"}
                 </div>
@@ -80,23 +82,23 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
           
           {history.length > 0 && (
             <>
-              <Separator className="my-2" />
+              <Separator />
               
               <div>
-                <h3 className="text-xs sm:text-sm font-semibold mb-3 text-foreground flex items-center gap-2 uppercase">
+                <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   Recent History
                 </h3>
-                <ScrollArea className="h-48 sm:h-64 pr-3">
+                <ScrollArea className="h-[300px] pr-3">
                   <div className="space-y-2">
                     {history.map((item, index) => (
                       <div
                         key={item.id}
-                        className="p-2 sm:p-3 rounded-md border border-border bg-muted/40 hover-elevate transition-all cursor-pointer"
+                        className="p-3 rounded-md border border-border bg-card hover-elevate transition-all"
                         data-testid={`history-item-${index}`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <span className="text-xs sm:text-sm font-semibold text-foreground capitalize" data-testid={`history-emotion-${index}`}>
+                          <span className="text-sm font-semibold text-foreground capitalize" data-testid={`history-emotion-${index}`}>
                             {item.dominantEmotion}
                           </span>
                           <span className="text-xs font-mono text-primary font-semibold" data-testid={`history-confidence-${index}`}>
@@ -116,12 +118,12 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
           )}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-            <TrendingUp className="w-6 h-6 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+            <TrendingUp className="w-8 h-8 text-muted-foreground" />
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-[200px]">
-            Start by analyzing audio or video to see results
+          <p className="text-sm text-muted-foreground max-w-[200px]">
+            Analysis results will appear here after processing audio
           </p>
         </div>
       )}
