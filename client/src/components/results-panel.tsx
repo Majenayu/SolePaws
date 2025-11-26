@@ -16,33 +16,33 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
   };
 
   return (
-    <Card className="p-4 lg:p-6">
-      <h2 className="text-xl font-semibold mb-4 text-foreground" data-testid="text-results">
-        Results
+    <Card className="p-4 lg:p-6 bg-gradient-to-br from-orange-100 to-red-100 border-2 border-orange-300">
+      <h2 className="text-xl font-bold mb-4 text-orange-900" data-testid="text-results">
+        📊 Results
       </h2>
       
       {currentAnalysis ? (
         <div className="space-y-6">
-          <div className="bg-muted/40 rounded-lg p-6 border border-border">
-            <div className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
+          <div className="bg-gradient-to-br from-yellow-300 to-orange-300 rounded-lg p-6 border-2 border-yellow-400 shadow-md">
+            <div className="text-xs text-orange-900 font-semibold mb-4 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               Current Reading
             </div>
             
             <div 
-              className="text-3xl font-bold text-foreground capitalize mb-3"
+              className="text-3xl font-bold text-orange-900 capitalize drop-shadow-md mb-3"
               data-testid="text-current-emotion"
             >
               {currentAnalysis.dominantEmotion}
             </div>
             <div className="flex items-baseline gap-2 mb-4">
               <span 
-                className="text-4xl font-mono font-bold text-primary"
+                className="text-4xl font-mono font-bold text-red-600 drop-shadow-md"
                 data-testid="text-current-confidence"
               >
                 {Math.round(currentAnalysis.emotionScores[currentAnalysis.dominantEmotion] * 100)}%
               </span>
-              <span className="text-sm text-muted-foreground">confidence</span>
+              <span className="text-sm font-semibold text-orange-900">confidence</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2" data-testid="text-current-timestamp">
               <Clock className="w-3 h-3" />
