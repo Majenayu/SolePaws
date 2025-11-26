@@ -65,30 +65,25 @@ export function PetChatbot() {
   };
 
   return (
-    <div className="w-full">
-      {/* Chat Icon Button */}
+    <div className="w-full flex flex-col">
+      {/* Chat Toggle Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        size="icon"
-        className="w-full rounded-none rounded-t-lg shadow-lg"
+        className="w-full rounded-none rounded-t-lg shadow-md hover-elevate font-semibold gap-2"
         data-testid="button-open-chatbot"
         title="Pet Chatbot"
       >
-        {isOpen ? (
-          <X className="w-5 h-5" />
-        ) : (
-          <MessageCircle className="w-5 h-5 mr-2" />
-        )}
-        {isOpen ? "Close" : "Pet Chatbot"}
+        <MessageCircle className="w-4 h-4" />
+        {isOpen ? "Close Chatbot" : "Pet Assistant"}
       </Button>
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="w-full flex flex-col h-96 shadow-lg z-40 bg-background rounded-none">
+        <Card className="w-full flex flex-col h-72 sm:h-80 shadow-lg z-40 bg-background rounded-none border-t-0">
           {/* Header */}
-          <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-lg text-white">
-            <h3 className="font-semibold">Pet Emotion Detective</h3>
-            <p className="text-sm opacity-90">Ask about pet emotions & behaviors</p>
+          <div className="p-3 sm:p-4 border-b bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+            <h3 className="font-bold text-sm sm:text-base">Pet Assistant</h3>
+            <p className="text-xs opacity-90">Questions about emotions & behavior</p>
           </div>
 
           {/* Messages */}
