@@ -8,6 +8,16 @@ import { PetChatbot } from "@/components/pet-chatbot";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Video } from "lucide-react";
 
+const ANIMAL_EMOJIS: { [key: string]: string } = {
+  dog: "🐕",
+  cat: "🐈",
+  lovebird: "🦜",
+  chicken: "🐓",
+  pigeon: "🕊️",
+};
+
+const getAnimalEmoji = (animal: string) => ANIMAL_EMOJIS[animal.toLowerCase()] || "🐾";
+
 export default function Home() {
   const [currentAnalysis, setCurrentAnalysis] = useState<AudioAnalysis | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AudioAnalysis[]>([]);
@@ -21,12 +31,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
-      <header className="h-16 border-b-2 border-purple-200 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 flex items-center justify-center px-6 shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-teal-900 via-slate-800 to-teal-950">
+      <header className="h-16 border-b-2 border-teal-600 bg-gradient-to-r from-teal-700 to-teal-800 flex items-center justify-center px-6 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 text-white font-bold text-2xl" data-testid="icon-logo">🐾</div>
-          <h1 className="text-2xl font-bold text-white drop-shadow-md" data-testid="text-title">
-            SoulPaws - Pet Emotion Detection
+          <div className="w-8 h-8 text-teal-300 font-bold text-2xl" data-testid="icon-logo">🐾</div>
+          <h1 className="text-2xl font-bold text-teal-100 drop-shadow-md" data-testid="text-title">
+            SoulPaws - Smarter Care, Safer Connection
           </h1>
         </div>
       </header>
@@ -35,23 +45,24 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
           <div className="lg:col-span-3 space-y-4 lg:space-y-6">
             {currentAnalysis && (
-              <div className="bg-gradient-to-br from-blue-400 via-cyan-300 to-teal-400 rounded-lg p-6 border-2 border-blue-300 shadow-lg">
-                <div className="text-xs text-blue-900 font-semibold mb-4 flex items-center gap-1">
-                  🐾 Current Animal
+              <div className="bg-gradient-to-br from-teal-700 to-teal-800 rounded-lg p-6 border-2 border-teal-500 shadow-lg">
+                <div className="text-xs text-teal-200 font-semibold mb-4 flex items-center gap-1">
+                  📍 Current Species
                 </div>
                 <div 
-                  className="text-5xl font-bold text-white capitalize drop-shadow-md"
+                  className="text-5xl font-bold text-teal-100 drop-shadow-md mb-2"
                   data-testid="text-animal-left"
                 >
-                  {currentAnalysis.animal}
+                  {getAnimalEmoji(currentAnalysis.animal)}
                 </div>
+                <div className="text-sm text-teal-200 capitalize font-semibold">{currentAnalysis.animal}</div>
 
-                <div className="mt-6 pt-6 border-t-2 border-blue-300">
-                  <div className="text-xs text-blue-900 font-semibold mb-3 flex items-center gap-1">
-                    ❤️ Emotion Analysis
+                <div className="mt-6 pt-6 border-t-2 border-teal-500">
+                  <div className="text-xs text-teal-200 font-semibold mb-3 flex items-center gap-1">
+                    💫 Behaviour Analysis
                   </div>
                   <div 
-                    className="text-2xl font-bold text-white capitalize drop-shadow-md mb-4"
+                    className="text-2xl font-bold text-teal-100 capitalize drop-shadow-md mb-4"
                     data-testid="text-emotion-left"
                   >
                     {currentAnalysis.dominantEmotion}
@@ -81,7 +92,7 @@ export default function Home() {
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="audio" data-testid="tab-audio">
                   <Mic className="w-4 h-4 mr-2" />
-                  Audio Analysis
+                  Bio Echoistics
                 </TabsTrigger>
                 <TabsTrigger value="video" data-testid="tab-video">
                   <Video className="w-4 h-4 mr-2" />

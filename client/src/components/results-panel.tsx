@@ -16,64 +16,64 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
   };
 
   return (
-    <Card className="p-4 lg:p-6 bg-gradient-to-br from-orange-100 to-red-100 border-2 border-orange-300">
-      <h2 className="text-xl font-bold mb-4 text-orange-900" data-testid="text-results">
+    <Card className="p-4 lg:p-6 bg-gradient-to-br from-teal-800 to-slate-800 border-2 border-teal-600">
+      <h2 className="text-xl font-bold mb-4 text-teal-200" data-testid="text-results">
         📊 Results
       </h2>
       
       {currentAnalysis ? (
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-yellow-300 to-orange-300 rounded-lg p-6 border-2 border-yellow-400 shadow-md">
-            <div className="text-xs text-orange-900 font-semibold mb-4 flex items-center gap-1">
+          <div className="bg-gradient-to-br from-teal-700 to-teal-600 rounded-lg p-6 border-2 border-teal-500 shadow-md">
+            <div className="text-xs text-teal-200 font-semibold mb-4 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               Current Reading
             </div>
             
             <div 
-              className="text-3xl font-bold text-orange-900 capitalize drop-shadow-md mb-3"
+              className="text-3xl font-bold text-teal-100 capitalize drop-shadow-md mb-3"
               data-testid="text-current-emotion"
             >
               {currentAnalysis.dominantEmotion}
             </div>
             <div className="flex items-baseline gap-2 mb-4">
               <span 
-                className="text-4xl font-mono font-bold text-red-600 drop-shadow-md"
+                className="text-4xl font-mono font-bold text-cyan-300 drop-shadow-md"
                 data-testid="text-current-confidence"
               >
                 {Math.round(currentAnalysis.emotionScores[currentAnalysis.dominantEmotion] * 100)}%
               </span>
-              <span className="text-sm font-semibold text-orange-900">confidence</span>
+              <span className="text-sm font-semibold text-teal-200">confidence</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2" data-testid="text-current-timestamp">
+            <div className="flex items-center gap-1 text-xs text-teal-300 mt-2" data-testid="text-current-timestamp">
               <Clock className="w-3 h-3" />
               {formatTimestamp(currentAnalysis.timestamp)}
             </div>
           </div>
 
-          <div className="bg-card rounded-lg p-3 border border-border">
-            <h3 className="text-sm font-semibold mb-2 text-foreground">Audio Features</h3>
+          <div className="bg-slate-700 rounded-lg p-3 border border-teal-600">
+            <h3 className="text-sm font-semibold mb-2 text-teal-200">Bio Echoistics Features</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <div className="text-muted-foreground">Pitch</div>
-                <div className="font-mono font-semibold text-foreground" data-testid="text-pitch">
+                <div className="text-teal-400">Pitch</div>
+                <div className="font-mono font-semibold text-teal-100" data-testid="text-pitch">
                   {currentAnalysis.audioFeatures?.pitch != null ? `${currentAnalysis.audioFeatures.pitch.toFixed(1)} Hz` : "N/A"}
                 </div>
               </div>
               <div>
-                <div className="text-muted-foreground">Frequency</div>
-                <div className="font-mono font-semibold text-foreground" data-testid="text-frequency">
+                <div className="text-teal-400">Frequency</div>
+                <div className="font-mono font-semibold text-teal-100" data-testid="text-frequency">
                   {currentAnalysis.audioFeatures?.frequency != null ? `${currentAnalysis.audioFeatures.frequency.toFixed(0)} Hz` : "N/A"}
                 </div>
               </div>
               <div>
-                <div className="text-muted-foreground">Amplitude</div>
-                <div className="font-mono font-semibold text-foreground" data-testid="text-amplitude">
+                <div className="text-teal-400">Amplitude</div>
+                <div className="font-mono font-semibold text-teal-100" data-testid="text-amplitude">
                   {currentAnalysis.audioFeatures?.amplitude != null ? `${(currentAnalysis.audioFeatures.amplitude * 100).toFixed(0)}%` : "N/A"}
                 </div>
               </div>
               <div>
-                <div className="text-muted-foreground">Duration</div>
-                <div className="font-mono font-semibold text-foreground" data-testid="text-duration">
+                <div className="text-teal-400">Duration</div>
+                <div className="font-mono font-semibold text-teal-100" data-testid="text-duration">
                   {currentAnalysis.audioFeatures?.duration != null ? `${currentAnalysis.audioFeatures.duration.toFixed(1)}s` : "N/A"}
                 </div>
               </div>
