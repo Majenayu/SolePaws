@@ -231,23 +231,15 @@ export function VideoInput({
         };
       }
 
-      // Start real-time detection while video plays (only if detectors are ready)
-      let playStartTime: number | null = null;
-      const playbackDelayMs = 3000; // 3 seconds
-      
+      // Start real-time detection when video plays
       if (videoRef.current && canvasRef.current && detectorsReady) {
         const detectLoop = async () => {
           try {
-            if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) {
+            if (!videoRef.current || videoRef.current.ended) {
               if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
               }
               return;
-            }
-
-            // Track play start time
-            if (playStartTime === null && videoRef.current.currentTime > 0) {
-              playStartTime = Date.now();
             }
 
             // Get canvas ready for drawing
@@ -294,18 +286,23 @@ export function VideoInput({
                 drawSkeletonScaled(ctx, pose, scaleX, scaleY);
               }
             }
+
+            animationFrameRef.current = requestAnimationFrame(detectLoop);
           } catch (error) {
             console.error("Detection error:", error);
+            animationFrameRef.current = requestAnimationFrame(detectLoop);
           }
-
-          animationFrameRef.current = requestAnimationFrame(detectLoop);
         };
 
-        detectLoop();
+        // Start detection loop when video plays
+        videoRef.current.onplay = () => {
+          console.log("Video playing, starting detection loop");
+          detectLoop();
+        };
       }
 
       // Wait for 3 seconds of playback before showing results
-      await new Promise(resolve => setTimeout(resolve, playbackDelayMs));
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Use hardcoded filename-based matching (same as audio)
       const { apiRequest } = await import("@/lib/queryClient");
