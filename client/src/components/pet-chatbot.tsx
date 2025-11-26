@@ -70,7 +70,7 @@ export function PetChatbot() {
       <Button
         onClick={() => setIsOpen(!isOpen)}
         size="icon"
-        className="fixed bottom-6 right-6 rounded-full shadow-lg z-40"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full shadow-lg z-40"
         data-testid="button-open-chatbot"
         title="Pet Chatbot"
       >
@@ -83,7 +83,7 @@ export function PetChatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-96 h-96 flex flex-col shadow-xl z-40 bg-background">
+        <Card className="fixed bottom-24 left-1/2 -translate-x-1/2 w-96 h-96 flex flex-col shadow-xl z-40 bg-background">
           {/* Header */}
           <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-lg text-white">
             <h3 className="font-semibold">Pet Emotion Detective</h3>
