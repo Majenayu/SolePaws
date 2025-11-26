@@ -102,18 +102,35 @@ export function VideoInput({
         if (!videoRef.current || !canvasRef.current || !detectorsReady) return;
 
         try {
-          // Detect animal in video
+          // Get canvas ready for drawing
+          const canvas = canvasRef.current;
+          const video = videoRef.current;
+          
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          const scaleX = canvas.width / (video.videoWidth || 640);
+          const scaleY = canvas.height / (video.videoHeight || 480);
+
+          // Detect ALL objects in frame (for green bounding boxes)
           if (animalDetectorRef.current) {
-            const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
-            console.log('Animal detection result (recording):', detection);
-            if (detection && detection.confidence > 0.3) {
-              setDetectedAnimal(detection.animal);
-              setAnimalDetections(detection.detections || []);
-              console.log('Set animal detections:', detection.detections);
-            } else {
-              // Clear detections when no animals are found
-              setDetectedAnimal(null);
-              setAnimalDetections([]);
+            const allObjects = await animalDetectorRef.current.detectAllObjects(videoRef.current);
+            if (allObjects.length > 0) {
+              // Draw bounding boxes immediately with fresh data
+              drawAnimalBoundingBoxes(ctx, allObjects, scaleX, scaleY);
+              
+              // Set animal name if an animal is detected
+              const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken"];
+              const animal = allObjects.find(obj => animalClasses.includes(obj.class.toLowerCase()));
+              if (animal) {
+                setDetectedAnimal(animal.class);
+              }
             }
           }
 
@@ -124,26 +141,7 @@ export function VideoInput({
             if (poses && poses.length > 0) {
               const pose = poses[0];
               setPoseData(pose);
-
-              const ctx = canvasRef.current.getContext("2d");
-              if (ctx) {
-                const rect = canvasRef.current.getBoundingClientRect();
-                canvasRef.current.width = rect.width;
-                canvasRef.current.height = rect.height;
-                
-                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                
-                const video = videoRef.current;
-                const scaleX = canvasRef.current.width / (video.videoWidth || 640);
-                const scaleY = canvasRef.current.height / (video.videoHeight || 480);
-
-                drawSkeletonScaled(ctx, pose, scaleX, scaleY);
-                
-                // Draw bounding boxes for all detected animals
-                if (animalDetections.length > 0) {
-                  drawAnimalBoundingBoxes(ctx, animalDetections, scaleX, scaleY);
-                }
-              }
+              drawSkeletonScaled(ctx, pose, scaleX, scaleY);
             }
           }
         } catch (error) {
@@ -226,6 +224,8 @@ export function VideoInput({
       const videoUrl = URL.createObjectURL(videoBlob);
       if (videoRef.current) {
         videoRef.current.src = videoUrl;
+        videoRef.current.muted = false; // Ensure audio plays
+        videoRef.current.volume = 1.0;
         videoRef.current.oncanplay = () => {
           videoRef.current?.play().catch(e => console.error('Video playback error:', e));
         };
@@ -250,57 +250,48 @@ export function VideoInput({
               playStartTime = Date.now();
             }
 
-            // Detect animal
+            // Get canvas ready for drawing
+            const canvas = canvasRef.current;
+            const video = videoRef.current;
+            
+            if (!canvas) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (!ctx) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const scaleX = canvas.width / (video.videoWidth || 640);
+            const scaleY = canvas.height / (video.videoHeight || 480);
+
+            // Detect ALL objects in frame (for green bounding boxes)
             if (animalDetectorRef.current && detectorsReady) {
-              const detection = await animalDetectorRef.current.detectAnimals(videoRef.current);
-              console.log('Animal detection result (playback):', detection);
-              if (detection && detection.confidence > 0.3) {
-                setDetectedAnimal(detection.animal);
-                setAnimalDetections(detection.detections || []);
-                console.log('Set animal detections (playback):', detection.detections);
-              } else {
-                // Clear detections when no animals are found
-                setDetectedAnimal(null);
-                setAnimalDetections([]);
+              const allObjects = await animalDetectorRef.current.detectAllObjects(videoRef.current);
+              if (allObjects.length > 0) {
+                // Draw bounding boxes immediately with fresh data
+                drawAnimalBoundingBoxes(ctx, allObjects, scaleX, scaleY);
+                
+                // Set animal name if an animal is detected
+                const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken"];
+                const animal = allObjects.find(obj => animalClasses.includes(obj.class.toLowerCase()));
+                if (animal) {
+                  setDetectedAnimal(animal.class);
+                }
               }
             }
 
-            // Detect poses
-            if (poseDetectorRef.current && canvasRef.current && detectorsReady) {
+            // Detect poses and draw skeleton
+            if (poseDetectorRef.current && detectorsReady) {
               const poses = await poseDetectorRef.current.estimatePoses(videoRef.current);
-              
-              const canvas = canvasRef.current;
-              const video = videoRef.current;
-              
-              const rect = canvas.getBoundingClientRect();
-              canvas.width = rect.width;
-              canvas.height = rect.height;
 
-              const ctx = canvas.getContext("2d", { willReadFrequently: true });
-              if (ctx) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                const scaleX = canvas.width / (video.videoWidth || 640);
-                const scaleY = canvas.height / (video.videoHeight || 480);
-
-                // Draw skeleton and bounding box even if pose detection is weak
-                if (poses && poses.length > 0) {
-                  const pose = poses[0];
-                  setPoseData(pose);
-                  drawSkeletonScaled(ctx, pose, scaleX, scaleY);
-                } else {
-                  // If no pose detected, still draw a bounding box indicator
-                  ctx.strokeStyle = "#00ff00";
-                  ctx.lineWidth = 2;
-                  ctx.globalAlpha = 0.3;
-                  ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-                  ctx.globalAlpha = 1.0;
-                }
-                
-                // Draw bounding boxes for all detected animals
-                if (animalDetections.length > 0) {
-                  drawAnimalBoundingBoxes(ctx, animalDetections, scaleX, scaleY);
-                }
+              if (poses && poses.length > 0) {
+                const pose = poses[0];
+                setPoseData(pose);
+                drawSkeletonScaled(ctx, pose, scaleX, scaleY);
               }
             }
           } catch (error) {
@@ -342,13 +333,15 @@ export function VideoInput({
         description: `Detected: ${analysis.animal} - Emotion: ${analysis.dominantEmotion}`,
       });
 
+      // Let video play till the end, but clean up URL when done
       if (videoRef.current) {
-        videoRef.current.pause();
+        videoRef.current.onended = () => {
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+          }
+          URL.revokeObjectURL(videoUrl);
+        };
       }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      URL.revokeObjectURL(videoUrl);
     } catch (error) {
       console.error('Video analysis error:', error);
       toast({
@@ -368,50 +361,33 @@ export function VideoInput({
     scaleX: number,
     scaleY: number
   ) => {
-    console.log(`Drawing ${detections.length} animal detections`, detections);
-    
-    // Color palette for different animal types
-    const animalColors: Record<string, string> = {
-      dog: "#FF4444",      // Red
-      cat: "#00BFFF",      // Cyan
-      bird: "#FFFF00",     // Yellow
-      chicken: "#FFFF00",  // Yellow
-      horse: "#FF8C00",    // Orange
-      sheep: "#90EE90",    // Light green
-      cow: "#FFA500",      // Orange
-      elephant: "#FF4444", // Red
-      bear: "#8B4513",     // Brown
-      zebra: "#FFD700",    // Gold
-      giraffe: "#FFFF00",  // Yellow
-    };
+    // Draw GREEN bounding boxes around ALL detected objects
+    const boxColor = "#00ff00"; // Bright green
 
     detections.forEach((detection) => {
-      console.log('Drawing detection:', detection);
       const [x, y, width, height] = detection.bbox;
       const scaledX = x * scaleX;
       const scaledY = y * scaleY;
       const scaledWidth = width * scaleX;
       const scaledHeight = height * scaleY;
       
-      const animalClass = detection.class.toLowerCase();
       const confidence = Math.round(detection.score * 100);
-      const color = animalColors[animalClass] || "#00ff00"; // Default to green
 
-      // Draw bounding box
-      ctx.strokeStyle = color;
+      // Draw green bounding box
+      ctx.strokeStyle = boxColor;
       ctx.lineWidth = 3;
       ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
 
       // Draw label background
       const label = `${detection.class}: ${confidence}%`;
-      ctx.font = "bold 16px Arial";
+      ctx.font = "bold 14px Arial";
       const textMetrics = ctx.measureText(label);
       const textWidth = textMetrics.width;
-      const textHeight = 20;
+      const textHeight = 18;
       const padding = 4;
 
-      // Background rectangle for label
-      ctx.fillStyle = color;
+      // Background rectangle for label (green)
+      ctx.fillStyle = boxColor;
       ctx.fillRect(
         scaledX,
         scaledY - textHeight - padding * 2,
@@ -419,8 +395,8 @@ export function VideoInput({
         textHeight + padding * 2
       );
 
-      // Draw label text
-      ctx.fillStyle = "#000000"; // Black text for contrast
+      // Draw label text (black for contrast)
+      ctx.fillStyle = "#000000";
       ctx.fillText(label, scaledX + padding, scaledY - padding - 2);
     });
   };

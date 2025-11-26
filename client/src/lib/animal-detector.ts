@@ -19,13 +19,38 @@ export class AnimalDetector {
 
   async initialize() {
     try {
-      console.log("Loading COCO-SSD model for animal detection...");
+      console.log("Loading COCO-SSD model for object detection...");
       this.model = await cocoSsd.load();
       this.initialized = true;
-      console.log("Animal detector initialized successfully");
+      console.log("Object detector initialized successfully");
     } catch (error) {
-      console.error("Failed to initialize animal detector:", error);
+      console.error("Failed to initialize object detector:", error);
       this.initialized = false;
+    }
+  }
+
+  // Detect ALL objects in video (for green bounding boxes)
+  async detectAllObjects(videoElement: HTMLVideoElement): Promise<AnimalDetection[]> {
+    if (!this.initialized || !this.model) {
+      return [];
+    }
+
+    try {
+      const predictions = await this.model.detect(videoElement);
+      
+      // Return ALL detections with confidence > 0.3
+      const allDetections = predictions
+        .filter(pred => pred.score > 0.3)
+        .map(pred => ({
+          class: pred.class,
+          score: pred.score,
+          bbox: pred.bbox as [number, number, number, number]
+        }));
+
+      return allDetections;
+    } catch (error) {
+      console.error("Object detection error:", error);
+      return [];
     }
   }
 
@@ -38,7 +63,7 @@ export class AnimalDetector {
       const predictions = await this.model.detect(videoElement);
       
       // Filter for animal classes
-      const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken"];
+      const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken", "person"];
       const animalPredictions = predictions.filter(pred => 
         animalClasses.includes(pred.class.toLowerCase()) && pred.score > 0.3
       );
