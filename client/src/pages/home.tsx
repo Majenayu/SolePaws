@@ -30,6 +30,11 @@ export default function Home() {
     setIsAnalyzing(false);
   };
 
+  const handleResetAnalysis = () => {
+    setCurrentAnalysis(null);
+    setIsAnalyzing(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-900 via-slate-800 to-teal-950">
       <header className="h-16 border-b-2 border-teal-600 bg-gradient-to-r from-teal-700 to-teal-800 flex items-center justify-center px-6 shadow-lg">
@@ -104,6 +109,7 @@ export default function Home() {
                 <AudioInput
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
+                  onResetAnalysis={handleResetAnalysis}
                 />
               </TabsContent>
 
@@ -111,6 +117,7 @@ export default function Home() {
                 <VideoInput
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
+                  onResetAnalysis={handleResetAnalysis}
                 />
               </TabsContent>
             </Tabs>

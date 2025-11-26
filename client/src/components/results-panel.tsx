@@ -23,33 +23,6 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
       
       {currentAnalysis ? (
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-teal-700 to-teal-600 rounded-lg p-6 border-2 border-teal-500 shadow-md">
-            <div className="text-xs text-teal-200 font-semibold mb-4 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              Current Reading
-            </div>
-            
-            <div 
-              className="text-3xl font-bold text-teal-100 capitalize drop-shadow-md mb-3"
-              data-testid="text-current-emotion"
-            >
-              {currentAnalysis.dominantEmotion}
-            </div>
-            <div className="flex items-baseline gap-2 mb-4">
-              <span 
-                className="text-4xl font-mono font-bold text-cyan-300 drop-shadow-md"
-                data-testid="text-current-confidence"
-              >
-                {Math.round(currentAnalysis.emotionScores[currentAnalysis.dominantEmotion] * 100)}%
-              </span>
-              <span className="text-sm font-semibold text-teal-200">confidence</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-teal-300 mt-2" data-testid="text-current-timestamp">
-              <Clock className="w-3 h-3" />
-              {formatTimestamp(currentAnalysis.timestamp)}
-            </div>
-          </div>
-
           <div className="bg-slate-700 rounded-lg p-3 border border-teal-600">
             <h3 className="text-sm font-semibold mb-2 text-teal-200">Bio Echoistics Features</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
