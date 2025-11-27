@@ -2,9 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mic, Upload, Square, Loader2 } from "lucide-react";
-
-// Dark green color for icons
-const darkGreen = "text-green-700";
 import { AudioAnalysis } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -13,6 +10,7 @@ interface AudioInputProps {
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
   onResetAnalysis: () => void;
+  onHumanVoiceDetected?: (detected: boolean) => void;
   sampleFile?: File;
 }
 
@@ -20,12 +18,14 @@ export function AudioInput({
   onAnalysisComplete, 
   onAnalyzing,
   onResetAnalysis,
+  onHumanVoiceDetected,
   sampleFile
 }: AudioInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [humanVoiceDetected, setHumanVoiceDetected] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -33,6 +33,7 @@ export function AudioInput({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
   
   const { toast } = useToast();
 
@@ -48,11 +49,22 @@ export function AudioInput({
       if (timerRef.current) clearInterval(timerRef.current);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       if (audioContextRef.current) audioContextRef.current.close();
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.stop();
+      }
     };
   }, []);
 
+  // Notify parent when human voice detection state changes
+  useEffect(() => {
+    if (onHumanVoiceDetected) {
+      onHumanVoiceDetected(humanVoiceDetected);
+    }
+  }, [humanVoiceDetected, onHumanVoiceDetected]);
+
   const startRecording = async () => {
     onResetAnalysis();
+    setHumanVoiceDetected(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
@@ -67,6 +79,45 @@ export function AudioInput({
         animationFrameRef.current = requestAnimationFrame(updateWaveform);
       };
       
+      // Initialize speech recognition for human voice detection
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        speechRecognitionRef.current = new SpeechRecognition();
+        speechRecognitionRef.current.continuous = true;
+        speechRecognitionRef.current.interimResults = true;
+        speechRecognitionRef.current.lang = 'en-US';
+        
+        speechRecognitionRef.current.onresult = (event: any) => {
+          // If any speech is detected, it's likely human voice
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript.trim();
+            if (transcript.length > 0) {
+              setHumanVoiceDetected(true);
+              toast({
+                title: "Human Voice Detected",
+                description: "This system is designed for animal audio analysis only. Human voice will show error results.",
+                variant: "destructive",
+              });
+              // Stop speech recognition after detection
+              if (speechRecognitionRef.current) {
+                speechRecognitionRef.current.stop();
+              }
+              break;
+            }
+          }
+        };
+        
+        speechRecognitionRef.current.onerror = (event: any) => {
+          console.log('Speech recognition error:', event.error);
+        };
+        
+        try {
+          speechRecognitionRef.current.start();
+        } catch (e) {
+          console.log('Speech recognition already started');
+        }
+      }
+      
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
       
@@ -79,6 +130,14 @@ export function AudioInput({
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
           animationFrameRef.current = null;
+        }
+        // Stop speech recognition when recording stops
+        if (speechRecognitionRef.current) {
+          try {
+            speechRecognitionRef.current.stop();
+          } catch (e) {
+            console.log('Speech recognition already stopped');
+          }
         }
         await analyzeAudio(audioBlob);
         stream.getTracks().forEach(track => track.stop());
@@ -273,12 +332,12 @@ export function AudioInput({
               "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300",
               isRecording 
                 ? "bg-destructive animate-pulse" 
-                : "bg-primary"
+                : "bg-green-700"
             )}>
               {isRecording ? (
                 <Square className="w-8 h-8 text-destructive-foreground" />
               ) : (
-                <Mic className="w-8 h-8 text-primary-foreground" />
+                <Mic className="w-8 h-8 text-white" />
               )}
             </div>
           </div>
@@ -314,8 +373,8 @@ export function AudioInput({
 
         <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-lg bg-muted/30">
           <div className="mb-4">
-            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center">
-              <Upload className="w-8 h-8 text-secondary-foreground" />
+            <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <Upload className="w-8 h-8 text-gray-600 dark:text-gray-300" />
             </div>
           </div>
           

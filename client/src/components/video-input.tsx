@@ -11,6 +11,7 @@ interface VideoInputProps {
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
   onResetAnalysis: () => void;
+  onHumanDetected?: (detected: boolean) => void;
   sampleFile?: File;
 }
 
@@ -18,6 +19,7 @@ export function VideoInput({
   onAnalysisComplete,
   onAnalyzing,
   onResetAnalysis,
+  onHumanDetected,
   sampleFile,
 }: VideoInputProps) {
   const [humanDetected, setHumanDetected] = useState(false);
@@ -79,6 +81,13 @@ export function VideoInput({
     }
   }, [sampleFile, detectorsReady]);
 
+  // Notify parent when human detection state changes
+  useEffect(() => {
+    if (onHumanDetected) {
+      onHumanDetected(humanDetected);
+    }
+  }, [humanDetected, onHumanDetected]);
+
   const startRecording = async () => {
     onResetAnalysis();
     setHumanDetected(false);
@@ -127,14 +136,29 @@ export function VideoInput({
           if (animalDetectorRef.current) {
             const allObjects = await animalDetectorRef.current.detectAllObjects(videoRef.current);
             if (allObjects.length > 0) {
-              // Draw bounding boxes immediately with fresh data
+              // Check for human detection in live camera
+              const personDetected = allObjects.some(obj => obj.class.toLowerCase() === 'person');
+              if (personDetected && !humanDetected) {
+                setHumanDetected(true);
+                toast({
+                  title: "Human Detected",
+                  description: "This system is designed for animal analysis only. Human presence will show error results.",
+                  variant: "destructive",
+                });
+              } else if (!personDetected && humanDetected) {
+                setHumanDetected(false);
+              }
+              
+              // Draw bounding boxes with different colors for humans vs animals
               drawAnimalBoundingBoxes(ctx, allObjects, scaleX, scaleY);
               
-              // Set animal name if an animal is detected
-              const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken"];
-              const animal = allObjects.find(obj => animalClasses.includes(obj.class.toLowerCase()));
-              if (animal) {
-                setDetectedAnimal(animal.class);
+              // Set animal name if an animal is detected (only when no human)
+              if (!personDetected) {
+                const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken"];
+                const animal = allObjects.find(obj => animalClasses.includes(obj.class.toLowerCase()));
+                if (animal) {
+                  setDetectedAnimal(animal.class);
+                }
               }
             }
           }
@@ -386,9 +410,6 @@ export function VideoInput({
     scaleX: number,
     scaleY: number
   ) => {
-    // Draw GREEN bounding boxes around ALL detected objects
-    const boxColor = "#00ff00"; // Bright green
-
     detections.forEach((detection) => {
       const [x, y, width, height] = detection.bbox;
       const scaledX = x * scaleX;
@@ -397,21 +418,25 @@ export function VideoInput({
       const scaledHeight = height * scaleY;
       
       const confidence = Math.round(detection.score * 100);
+      
+      // Use RED for humans, dark green for animals
+      const isHuman = detection.class.toLowerCase() === 'person';
+      const boxColor = isHuman ? "#ff0000" : "#006400"; // Red for human, dark green for animals
 
-      // Draw green bounding box
+      // Draw bounding box
       ctx.strokeStyle = boxColor;
       ctx.lineWidth = 3;
       ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
 
       // Draw label background
-      const label = `${detection.class}: ${confidence}%`;
+      const label = isHuman ? `HUMAN DETECTED: ${confidence}%` : `${detection.class}: ${confidence}%`;
       ctx.font = "bold 14px Arial";
       const textMetrics = ctx.measureText(label);
       const textWidth = textMetrics.width;
       const textHeight = 18;
       const padding = 4;
 
-      // Background rectangle for label (green)
+      // Background rectangle for label
       ctx.fillStyle = boxColor;
       ctx.fillRect(
         scaledX,
@@ -420,14 +445,15 @@ export function VideoInput({
         textHeight + padding * 2
       );
 
-      // Draw label text (black for contrast)
-      ctx.fillStyle = "#000000";
+      // Draw label text (white for red background, black for green)
+      ctx.fillStyle = isHuman ? "#ffffff" : "#000000";
       ctx.fillText(label, scaledX + padding, scaledY - padding - 2);
     });
   };
 
   const drawSkeletonScaled = (ctx: CanvasRenderingContext2D, pose: any, scaleX: number, scaleY: number) => {
     const keypoints = pose.keypoints || [];
+    const darkGreen = "#006400"; // Dark green color for skeleton
 
     // Draw skeleton connections first (so they appear behind keypoints)
     const connections = pose.skeleton || [];
@@ -452,11 +478,11 @@ export function VideoInput({
           ctx.lineJoin = "round";
           ctx.stroke();
 
-          // Main skeleton line (bright green)
+          // Main skeleton line (dark green)
           ctx.beginPath();
           ctx.moveTo(startX, startY);
           ctx.lineTo(endX, endY);
-          ctx.strokeStyle = "#00ff00";
+          ctx.strokeStyle = darkGreen;
           ctx.lineWidth = 4;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
@@ -475,8 +501,8 @@ export function VideoInput({
         // MoveNet-style box size based on confidence
         const boxSize = 12 + confidence * 8;
         
-        // Draw MoveNet box (green rectangle around keypoint)
-        ctx.strokeStyle = "#00ff00";
+        // Draw MoveNet box (dark green rectangle around keypoint)
+        ctx.strokeStyle = darkGreen;
         ctx.lineWidth = 2;
         ctx.globalAlpha = 0.8;
         ctx.strokeRect(x - boxSize / 2, y - boxSize / 2, boxSize, boxSize);
@@ -491,10 +517,10 @@ export function VideoInput({
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fill();
         
-        // Main keypoint (bright green)
+        // Main keypoint (dark green)
         ctx.beginPath();
         ctx.arc(x, y, circleSize, 0, 2 * Math.PI);
-        ctx.fillStyle = "#00ff00";
+        ctx.fillStyle = darkGreen;
         ctx.fill();
       }
     });
@@ -513,8 +539,8 @@ export function VideoInput({
         
         const padding = 15;
         
-        // Main bounding box - bright green
-        ctx.strokeStyle = "#00ff00";
+        // Main bounding box - dark green
+        ctx.strokeStyle = darkGreen;
         ctx.lineWidth = 3;
         ctx.globalAlpha = 0.7;
         ctx.strokeRect(minX - padding, minY - padding, maxX - minX + padding * 2, maxY - minY + padding * 2);

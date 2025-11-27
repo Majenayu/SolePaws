@@ -23,6 +23,7 @@ export default function Home() {
   const [analysisHistory, setAnalysisHistory] = useState<AudioAnalysis[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisMode, setAnalysisMode] = useState<"audio" | "video">("audio");
+  const [humanDetected, setHumanDetected] = useState(false);
 
   const handleAnalysisComplete = (analysis: AudioAnalysis) => {
     setCurrentAnalysis(analysis);
@@ -33,6 +34,11 @@ export default function Home() {
   const handleResetAnalysis = () => {
     setCurrentAnalysis(null);
     setIsAnalyzing(false);
+    setHumanDetected(false);
+  };
+
+  const handleHumanDetected = (detected: boolean) => {
+    setHumanDetected(detected);
   };
 
   return (
@@ -110,6 +116,7 @@ export default function Home() {
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
                   onResetAnalysis={handleResetAnalysis}
+                  onHumanVoiceDetected={handleHumanDetected}
                 />
               </TabsContent>
 
@@ -118,6 +125,7 @@ export default function Home() {
                   onAnalysisComplete={handleAnalysisComplete}
                   onAnalyzing={setIsAnalyzing}
                   onResetAnalysis={handleResetAnalysis}
+                  onHumanDetected={handleHumanDetected}
                 />
               </TabsContent>
             </Tabs>
@@ -127,6 +135,7 @@ export default function Home() {
             <ResultsPanel
               currentAnalysis={currentAnalysis}
               history={analysisHistory}
+              humanDetected={humanDetected}
             />
             <PetChatbot />
           </div>

@@ -2,15 +2,16 @@ import { AudioAnalysis } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Clock, TrendingUp } from "lucide-react";
+import { Clock, TrendingUp, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface ResultsPanelProps {
   currentAnalysis: AudioAnalysis | null;
   history: AudioAnalysis[];
+  humanDetected?: boolean;
 }
 
-export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
+export function ResultsPanel({ currentAnalysis, history, humanDetected = false }: ResultsPanelProps) {
   const formatTimestamp = (timestamp: string) => {
     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
@@ -18,10 +19,26 @@ export function ResultsPanel({ currentAnalysis, history }: ResultsPanelProps) {
   return (
     <Card className="p-4 lg:p-6 bg-gradient-to-br from-teal-800 to-slate-800 border-2 border-teal-600">
       <h2 className="text-xl font-bold mb-4 text-teal-200" data-testid="text-results">
-        📊 Results
+        <TrendingUp className="w-5 h-5 inline mr-2 text-teal-300" />
+        Results
       </h2>
       
-      {currentAnalysis ? (
+      {humanDetected ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center mb-4 animate-pulse">
+            <AlertTriangle className="w-10 h-10 text-red-500" />
+          </div>
+          <h3 className="text-lg font-bold text-red-400 mb-2" data-testid="text-error-title">
+            ERROR: Human Detected
+          </h3>
+          <p className="text-sm text-red-300/80 max-w-[250px] mb-4" data-testid="text-error-description">
+            This system is designed for animal analysis only. Please remove human presence from the frame or audio to proceed with analysis.
+          </p>
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-xs text-red-300">
+            Analysis blocked due to human detection. Results cannot be generated.
+          </div>
+        </div>
+      ) : currentAnalysis ? (
         <div className="space-y-6">
           <div className="bg-slate-700 rounded-lg p-3 border border-teal-600">
             <h3 className="text-sm font-semibold mb-2 text-teal-200">Bio Echoistics Features</h3>
