@@ -128,5 +128,6 @@ Preferred communication style: Simple, everyday language.
 - **Error State Display**: Results panel now shows red error message when humans are detected, blocking emotion analysis
 - **Dark Green Icons**: Updated microphone icon and skeleton detection to use dark green (#006400) for animal detection, while keeping red for human detection
 - **Draggable Floating Chatbot**: Converted the Pet Chatbot from a fixed panel into a draggable floating icon that can be moved anywhere on the screen for improved accessibility
-- **8-Second Live Analysis Visualization**: Single animated line chart shows live emotion readings for 8 seconds during analysis (both audio and video), with random fluctuations gradually settling to final pretrained values for all 9 emotion types
-- **Unified Analysis Animation**: Both audio and video analysis use the same 8-second animation timeline with real-time graph updates and final confidence scores
+- **7-Second Live Analysis Visualization**: Single animated line chart shows live emotion readings for 7 seconds during analysis (both audio and video, including uploaded files), with random fluctuations gradually settling to final pretrained values for all 9 emotion types
+- **Unified Analysis Animation**: Both audio and video analysis use the same 7-second animation timeline with real-time graph updates and final confidence scores
+- **Live Value Display**: Graph displays all emotion confidence values that animate and gradually settle during the 7-second analysis period
