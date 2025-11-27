@@ -299,6 +299,11 @@ export function AudioInput({
       // Cleanup
       audioElement.pause();
       URL.revokeObjectURL(audioUrl);
+      
+      // Keep analyzing state true for 7 seconds to show animation
+      setTimeout(() => {
+        onAnalyzing(false);
+      }, 7000);
     } catch (error) {
       console.error('Analysis error:', error);
       toast({
@@ -306,10 +311,10 @@ export function AudioInput({
         description: "Failed to analyze audio. Please try again.",
         variant: "destructive",
       });
+      onAnalyzing(false);
     } finally {
       setIsProcessing(false);
       setSelectedFile(null);
-      onAnalyzing(false);
     }
   };
 

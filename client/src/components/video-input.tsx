@@ -391,6 +391,11 @@ export function VideoInput({
           URL.revokeObjectURL(videoUrl);
         };
       }
+
+      // Keep analyzing state true for 7 seconds to show animation
+      setTimeout(() => {
+        onAnalyzing(false);
+      }, 7000);
     } catch (error) {
       console.error('Video analysis error:', error);
       toast({
@@ -398,9 +403,9 @@ export function VideoInput({
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
+      onAnalyzing(false);
     } finally {
       setIsProcessing(false);
-      onAnalyzing(false);
     }
   };
 

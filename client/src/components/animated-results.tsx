@@ -13,7 +13,7 @@ interface ChartDataPoint {
   [key: string]: number;
 }
 
-const ANALYSIS_TIME = 8; // 8 seconds for both audio and video
+const ANALYSIS_TIME = 7; // 7 seconds for both audio and video
 
 export function AnimatedResults({ analysis, isAnalyzing }: AnimatedResultsProps) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -32,7 +32,7 @@ export function AnimatedResults({ analysis, isAnalyzing }: AnimatedResultsProps)
     });
     setChartData([initialData]);
 
-    // Animate for 8 seconds
+    // Animate for 7 seconds
     let currentTime = 0;
     const animationInterval = setInterval(() => {
       currentTime += 0.5; // Update every 500ms
@@ -80,30 +80,35 @@ export function AnimatedResults({ analysis, isAnalyzing }: AnimatedResultsProps)
   return (
     <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 border-teal-600">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-semibold text-teal-200">Emotion Analysis - Live Results</h3>
+        <h3 className="text-sm font-semibold text-teal-200">Live Emotion Analysis</h3>
         {animationComplete && (
           <span className="text-xs text-green-400 font-semibold">Analysis Complete</span>
         )}
       </div>
-      <ResponsiveContainer width="100%" height={350}>
-        <LineChart data={chartData}>
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 50 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
           <XAxis 
             dataKey="time" 
             stroke="rgba(148, 163, 184, 0.5)"
-            label={{ value: "Time (sec)", position: "insideBottomRight", offset: -5 }}
+            label={{ value: "Time (seconds)", position: "insideBottomRight", offset: -10 }}
           />
           <YAxis 
             stroke="rgba(148, 163, 184, 0.5)"
             domain={[0, 1]}
-            label={{ value: "Confidence", angle: -90, position: "insideLeft" }}
+            label={{ value: "Confidence Score", angle: -90, position: "insideLeft" }}
           />
           <Tooltip 
-            contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid #14b8a6" }}
+            contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.95)", border: "1px solid #14b8a6", borderRadius: "4px" }}
             labelStyle={{ color: "#e2e8f0" }}
-            formatter={(value) => typeof value === 'number' ? value.toFixed(2) : value}
+            formatter={(value) => typeof value === 'number' ? value.toFixed(3) : value}
+            labelFormatter={(label) => `${label}s`}
           />
-          <Legend wrapperStyle={{ paddingTop: "10px" }} />
+          <Legend 
+            wrapperStyle={{ paddingTop: "15px" }}
+            verticalAlign="bottom"
+            height={36}
+          />
           {emotionTypes.map((emotion) => (
             <Line
               key={emotion}
@@ -111,9 +116,10 @@ export function AnimatedResults({ analysis, isAnalyzing }: AnimatedResultsProps)
               dataKey={emotion}
               stroke={emotionColors[emotion]}
               dot={false}
-              isAnimationActive={isAnalyzing}
+              isAnimationActive={!animationComplete}
               animationDuration={300}
-              strokeWidth={2}
+              strokeWidth={2.5}
+              name={emotion.charAt(0).toUpperCase() + emotion.slice(1)}
             />
           ))}
         </LineChart>
