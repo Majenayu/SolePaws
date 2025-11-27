@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mic, Upload, Square, Loader2 } from "lucide-react";
+
+// Dark green color for icons
+const darkGreen = "text-green-700";
 import { AudioAnalysis } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -9,12 +12,14 @@ import { apiRequest } from "@/lib/queryClient";
 interface AudioInputProps {
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
+  onResetAnalysis: () => void;
   sampleFile?: File;
 }
 
 export function AudioInput({ 
   onAnalysisComplete, 
   onAnalyzing,
+  onResetAnalysis,
   sampleFile
 }: AudioInputProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -47,6 +52,7 @@ export function AudioInput({
   }, []);
 
   const startRecording = async () => {
+    onResetAnalysis();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
@@ -110,6 +116,7 @@ export function AudioInput({
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    onResetAnalysis();
     const file = event.target.files?.[0];
     if (!file) return;
 

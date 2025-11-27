@@ -10,14 +10,17 @@ import { AnimalDetector } from "@/lib/animal-detector";
 interface VideoInputProps {
   onAnalysisComplete: (analysis: AudioAnalysis) => void;
   onAnalyzing: (analyzing: boolean) => void;
+  onResetAnalysis: () => void;
   sampleFile?: File;
 }
 
 export function VideoInput({
   onAnalysisComplete,
   onAnalyzing,
+  onResetAnalysis,
   sampleFile,
 }: VideoInputProps) {
+  const [humanDetected, setHumanDetected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -77,6 +80,8 @@ export function VideoInput({
   }, [sampleFile, detectorsReady]);
 
   const startRecording = async () => {
+    onResetAnalysis();
+    setHumanDetected(false);
     if (!detectorsReady) {
       toast({
         title: "Detectors not ready",
@@ -199,6 +204,8 @@ export function VideoInput({
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    onResetAnalysis();
+    setHumanDetected(false);
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -217,6 +224,14 @@ export function VideoInput({
   };
 
   const analyzeVideo = async (videoBlob: Blob, fileName?: string) => {
+    if (humanDetected) {
+      toast({
+        title: "Analysis Blocked",
+        description: "Cannot analyze when human is detected. Please ensure only animals are in the frame.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsProcessing(true);
     onAnalyzing(true);
 
@@ -264,13 +279,26 @@ export function VideoInput({
             if (animalDetectorRef.current && detectorsReady) {
               const allObjects = await animalDetectorRef.current.detectAllObjects(videoRef.current);
               if (allObjects.length > 0) {
+                // Check for human detection
+                const personDetected = allObjects.some(obj => obj.class.toLowerCase() === 'person');
+                if (personDetected) {
+                  setHumanDetected(true);
+                  toast({
+                    title: "Human Detected",
+                    description: "This system is designed for animal analysis only. Analysis will not proceed with human presence.",
+                    variant: "destructive",
+                  });
+                } else {
+                  setHumanDetected(false);
+                }
+                
                 // Draw bounding boxes immediately with fresh data
                 drawAnimalBoundingBoxes(ctx, allObjects, scaleX, scaleY);
                 
                 // Set animal name if an animal is detected
                 const animalClasses = ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "chicken"];
                 const animal = allObjects.find(obj => animalClasses.includes(obj.class.toLowerCase()));
-                if (animal) {
+                if (animal && !personDetected) {
                   setDetectedAnimal(animal.class);
                 }
               }
