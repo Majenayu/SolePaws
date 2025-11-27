@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AudioAnalysis, emotionTypes } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface AnimatedResultsProps {
   analysis: AudioAnalysis | null;
@@ -13,9 +13,10 @@ interface ChartDataPoint {
   [key: string]: number;
 }
 
+const ANALYSIS_TIME = 8; // 8 seconds for both audio and video
+
 export function AnimatedResults({ analysis, isAnalyzing }: AnimatedResultsProps) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [displayedScores, setDisplayedScores] = useState<Record<string, number>>({});
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
@@ -30,39 +31,35 @@ export function AnimatedResults({ analysis, isAnalyzing }: AnimatedResultsProps)
       initialData[emotion] = Math.random() * 0.3;
     });
     setChartData([initialData]);
-    setDisplayedScores(initialData);
 
-    // Animate for 7 seconds
+    // Animate for 8 seconds
     let currentTime = 0;
     const animationInterval = setInterval(() => {
       currentTime += 0.5; // Update every 500ms
 
-      if (currentTime >= 7) {
+      if (currentTime >= ANALYSIS_TIME) {
         // Animation complete - show final values
-        const finalData: ChartDataPoint = { time: 7 };
+        const finalData: ChartDataPoint = { time: ANALYSIS_TIME };
         emotionTypes.forEach(emotion => {
           finalData[emotion] = analysis.emotionScores[emotion];
         });
         setChartData(prev => [...prev, finalData]);
-        setDisplayedScores(analysis.emotionScores);
         setAnimationComplete(true);
         clearInterval(animationInterval);
         return;
       }
 
-      // Generate random readings with slight bias towards final values
+      // Generate random readings with gradual bias towards final values
       const newData: ChartDataPoint = { time: parseFloat(currentTime.toFixed(1)) };
-      const progress = currentTime / 7;
+      const progress = currentTime / ANALYSIS_TIME;
       
       emotionTypes.forEach(emotion => {
         const randomValue = Math.random() * 0.5;
         const finalValue = analysis.emotionScores[emotion];
-        // Gradually bias towards the final value as time progresses
         newData[emotion] = randomValue * (1 - progress) + finalValue * progress;
       });
 
       setChartData(prev => [...prev, newData]);
-      setDisplayedScores(newData);
     }, 500);
 
     return () => clearInterval(animationInterval);
@@ -80,91 +77,47 @@ export function AnimatedResults({ analysis, isAnalyzing }: AnimatedResultsProps)
     return acc;
   }, {} as Record<string, string>);
 
-  // Prepare bar chart data from displayed scores
-  const barData = emotionTypes.map(emotion => ({
-    emotion: emotion.charAt(0).toUpperCase() + emotion.slice(1),
-    score: Math.round(displayedScores[emotion] * 100),
-  }));
-
   return (
-    <div className="space-y-4">
-      {/* Line Chart - Live Animation */}
-      <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 border-teal-600">
-        <h3 className="text-sm font-semibold text-teal-200 mb-3">Live Emotion Analysis</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
-            <XAxis 
-              dataKey="time" 
-              stroke="rgba(148, 163, 184, 0.5)"
-              label={{ value: "Time (sec)", position: "insideBottomRight", offset: -5 }}
-            />
-            <YAxis 
-              stroke="rgba(148, 163, 184, 0.5)"
-              domain={[0, 1]}
-              label={{ value: "Confidence", angle: -90, position: "insideLeft" }}
-            />
-            <Tooltip 
-              contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid #14b8a6" }}
-              labelStyle={{ color: "#e2e8f0" }}
-            />
-            <Legend wrapperStyle={{ paddingTop: "10px" }} />
-            {emotionTypes.map((emotion, idx) => (
-              <Line
-                key={emotion}
-                type="monotone"
-                dataKey={emotion}
-                stroke={emotionColors[emotion]}
-                dot={false}
-                isAnimationActive={isAnalyzing}
-                animationDuration={300}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+    <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 border-teal-600">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-semibold text-teal-200">Emotion Analysis - Live Results</h3>
         {animationComplete && (
-          <div className="mt-2 text-center text-xs text-green-400 font-semibold">
-            Analysis Complete
-          </div>
+          <span className="text-xs text-green-400 font-semibold">Analysis Complete</span>
         )}
-      </Card>
-
-      {/* Bar Chart - Final Scores */}
-      <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 border-teal-600">
-        <h3 className="text-sm font-semibold text-teal-200 mb-3">Emotion Confidence Scores</h3>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={barData} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
-            <XAxis type="number" stroke="rgba(148, 163, 184, 0.5)" domain={[0, 100]} />
-            <YAxis dataKey="emotion" type="category" stroke="rgba(148, 163, 184, 0.5)" width={100} />
-            <Tooltip 
-              contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid #14b8a6" }}
-              labelStyle={{ color: "#e2e8f0" }}
-              formatter={(value) => `${value}%`}
+      </div>
+      <ResponsiveContainer width="100%" height={350}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+          <XAxis 
+            dataKey="time" 
+            stroke="rgba(148, 163, 184, 0.5)"
+            label={{ value: "Time (sec)", position: "insideBottomRight", offset: -5 }}
+          />
+          <YAxis 
+            stroke="rgba(148, 163, 184, 0.5)"
+            domain={[0, 1]}
+            label={{ value: "Confidence", angle: -90, position: "insideLeft" }}
+          />
+          <Tooltip 
+            contentStyle={{ backgroundColor: "rgba(15, 23, 42, 0.9)", border: "1px solid #14b8a6" }}
+            labelStyle={{ color: "#e2e8f0" }}
+            formatter={(value) => typeof value === 'number' ? value.toFixed(2) : value}
+          />
+          <Legend wrapperStyle={{ paddingTop: "10px" }} />
+          {emotionTypes.map((emotion) => (
+            <Line
+              key={emotion}
+              type="monotone"
+              dataKey={emotion}
+              stroke={emotionColors[emotion]}
+              dot={false}
+              isAnimationActive={isAnalyzing}
+              animationDuration={300}
+              strokeWidth={2}
             />
-            <Bar dataKey="score" fill="#14b8a6" isAnimationActive={isAnalyzing} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
-
-      {/* Top Emotions Summary */}
-      <Card className="p-4 bg-gradient-to-br from-teal-800 to-teal-700 border-teal-500">
-        <h3 className="text-sm font-semibold text-teal-100 mb-3">Analysis Summary</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-teal-200">Dominant Emotion</span>
-            <span className="text-lg font-bold text-teal-100 capitalize">{analysis.dominantEmotion}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-teal-200">Confidence</span>
-            <span className="text-lg font-bold text-yellow-300">{Math.round(analysis.emotionScores[analysis.dominantEmotion] * 100)}%</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-teal-200">Animal Species</span>
-            <span className="text-lg font-bold text-teal-100 capitalize">{analysis.animal}</span>
-          </div>
-        </div>
-      </Card>
-    </div>
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </Card>
   );
 }
