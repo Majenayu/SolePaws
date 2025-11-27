@@ -29,7 +29,7 @@ export default function Home() {
   const handleAnalysisComplete = (analysis: AudioAnalysis) => {
     setCurrentAnalysis(analysis);
     setAnalysisHistory(prev => [analysis, ...prev].slice(0, 7));
-    setIsAnalyzing(false);
+    // Don't set isAnalyzing to false here - let the components handle the 7-second animation timing
   };
 
   const handleResetAnalysis = () => {

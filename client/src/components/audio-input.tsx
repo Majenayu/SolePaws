@@ -289,6 +289,7 @@ export function AudioInput({
       
       const analysis: AudioAnalysis = await res.json();
       
+      // Show analysis for 7 seconds before setting analyzing to false
       onAnalysisComplete(analysis);
       
       toast({
