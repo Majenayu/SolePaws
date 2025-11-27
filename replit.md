@@ -127,3 +127,4 @@ Preferred communication style: Simple, everyday language.
 - **Human Voice Detection**: Implemented Web Speech API integration to detect human speech during audio recording (Chrome/Edge/Safari supported)
 - **Error State Display**: Results panel now shows red error message when humans are detected, blocking emotion analysis
 - **Dark Green Icons**: Updated microphone icon and skeleton detection to use dark green (#006400) for animal detection, while keeping red for human detection
+- **Draggable Floating Chatbot**: Converted the Pet Chatbot from a fixed panel into a draggable floating icon that can be moved anywhere on the screen for improved accessibility

@@ -4,7 +4,7 @@ import { AudioInput } from "@/components/audio-input";
 import { VideoInput } from "@/components/video-input";
 import { EmotionCircle } from "@/components/emotion-circle";
 import { ResultsPanel } from "@/components/results-panel";
-import { PetChatbot } from "@/components/pet-chatbot";
+import { DraggableChatbot } from "@/components/draggable-chatbot";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Video } from "lucide-react";
 
@@ -137,10 +137,12 @@ export default function Home() {
               history={analysisHistory}
               humanDetected={humanDetected}
             />
-            <PetChatbot />
           </div>
         </div>
       </main>
+
+      {/* Draggable Floating Chatbot */}
+      <DraggableChatbot />
     </div>
   );
 }
