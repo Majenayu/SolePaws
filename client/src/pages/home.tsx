@@ -3,6 +3,7 @@ import { AudioAnalysis } from "@shared/schema";
 import { AudioInput } from "@/components/audio-input";
 import { VideoInput } from "@/components/video-input";
 import { EmotionCircle } from "@/components/emotion-circle";
+import { AnimatedResults } from "@/components/animated-results";
 import { ResultsPanel } from "@/components/results-panel";
 import { DraggableChatbot } from "@/components/draggable-chatbot";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -129,6 +130,14 @@ export default function Home() {
                 />
               </TabsContent>
             </Tabs>
+
+            {/* Animated Results with Charts */}
+            {(isAnalyzing || currentAnalysis) && (
+              <AnimatedResults 
+                analysis={currentAnalysis}
+                isAnalyzing={isAnalyzing}
+              />
+            )}
           </div>
 
           <div className="lg:col-span-3 flex flex-col gap-4">
