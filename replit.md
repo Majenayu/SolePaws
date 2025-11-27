@@ -123,3 +123,7 @@ Preferred communication style: Simple, everyday language.
 - **Full Video Playback with Audio**: Videos now play until the end without interruption, with audio enabled
 - **Fixed React State Closure Issue**: Detection results are now drawn immediately each frame instead of relying on React state, ensuring real-time rendering of bounding boxes
 - **Memory Leak Prevention**: Object URLs are properly cleaned up when video ends to prevent memory accumulation
+- **Human Detection in Live Camera**: Added real-time human detection using COCO-SSD object detection with red bounding boxes and "HUMAN DETECTED" labels when humans are visible
+- **Human Voice Detection**: Implemented Web Speech API integration to detect human speech during audio recording (Chrome/Edge/Safari supported)
+- **Error State Display**: Results panel now shows red error message when humans are detected, blocking emotion analysis
+- **Dark Green Icons**: Updated microphone icon and skeleton detection to use dark green (#006400) for animal detection, while keeping red for human detection
